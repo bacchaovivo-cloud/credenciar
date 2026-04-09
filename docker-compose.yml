@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # 🏆 CRM BACCH ENGINE
+  api:
+    build: .
+    container_name: bacch-crm-engine
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASS=bacch_root_pass
+      - DB_NAME=bacch_sistema
+      - JWT_SECRET=TROCAR_POR_CHAVE_GRANDE_E_SEGURA_32_CHARS
+      - FORENSIC_SALT=TROCAR_POR_SALT_SEGURO_16_CHARS
+    depends_on:
+      - db
+    networks:
+      - bacch-network
+
+  # 🗄️ DATABASE (MariaDB/MySQL)
+  db:
+    image: mariadb:10.6
+    container_name: bacch-crm-db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=bacch_root_pass
+      - MYSQL_DATABASE=bacch_sistema
+    volumes:
+      - bacch-db-data:/var/lib/mysql
+    networks:
+      - bacch-network
+
+networks:
+  bacch-network:
+    driver: bridge
+
+volumes:
+  bacch-db-data:

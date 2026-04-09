@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+dist/
+dist-ssr
+*.local
+
+# Environment
+.env
+.env.production
+.env.development
+.env.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+build-error.txt
+lint.txt
+
+# OS / IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Temporary Files
+tmp/
+temp/
+.gemini/
+.antigravity/
+
+# Database / Storage (se houver localmente)
+*.sqlite
+*.db
+uploads/
+!uploads/.gitkeep
