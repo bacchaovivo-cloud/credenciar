@@ -7,6 +7,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import QRCodeLib from 'qrcode';
 import confetti from 'canvas-confetti';
 import Fuse from 'fuse.js';
+import { motion, AnimatePresence } from 'framer-motion';
+
 
 // Components
 import Menu from '../components/Menu';

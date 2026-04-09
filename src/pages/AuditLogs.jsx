@@ -149,12 +149,16 @@ export default function AuditLogs() {
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
                                     <code className="text-[9px] font-mono text-slate-500 truncate flex-1">
-                                        {log.integridade_hash.substring(0, 16)}...
+                                        {log.integridade_hash ? log.integridade_hash.substring(0, 16) : 'HASH-AUSENTE'}...
                                     </code>
                                     <button 
                                         onClick={() => {
-                                            navigator.clipboard.writeText(log.integridade_hash);
-                                            exibirAlerta("Hash copiado!", "sucesso");
+                                            if (log.integridade_hash) {
+                                                navigator.clipboard.writeText(log.integridade_hash);
+                                                exibirAlerta("Hash copiado!", "sucesso");
+                                            } else {
+                                                exibirAlerta("Hash não disponível", "erro");
+                                            }
                                         }}
                                         className="p-1 text-slate-600 hover:text-white transition-colors"
                                     >
@@ -216,12 +220,16 @@ export default function AuditLogs() {
                                 <td className="p-6">
                                     <div className="flex items-center gap-3">
                                         <code className="text-[10px] font-mono text-slate-500 bg-black/40 p-2 rounded-lg max-w-[120px] truncate">
-                                            {log.integridade_hash}
+                                            {log.integridade_hash || '---'}
                                         </code>
                                         <button 
                                             onClick={() => {
-                                                navigator.clipboard.writeText(log.integridade_hash);
-                                                exibirAlerta("Hash copiado!", "sucesso");
+                                                if (log.integridade_hash) {
+                                                    navigator.clipboard.writeText(log.integridade_hash);
+                                                    exibirAlerta("Hash copiado!", "sucesso");
+                                                } else {
+                                                    exibirAlerta("Hash não disponível", "erro");
+                                                }
                                             }}
                                             className="p-2 text-slate-600 hover:text-white transition-colors"
                                         >

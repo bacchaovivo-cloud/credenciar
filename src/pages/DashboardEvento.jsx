@@ -10,7 +10,9 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import TotemConfigModal from '../components/TotemConfigModal';
 import { WarRoomPanel } from '../components/WarRoomPanel';
-import { StatCard, ComparisonChart } from '../components/DashboardComponents';
+import { LineChart, Line } from 'recharts';
+
+
 
 export default function DashboardEvento() {
   const { eventoId } = useParams();
@@ -47,8 +49,8 @@ export default function DashboardEvento() {
     try {
       const audio = new Audio('/sounds/alert_bottleneck.mp3');
       audio.volume = 0.5;
-      audio.play().catch(() => {});
-    } catch (e) {}
+      audio.play().catch(() => { });
+    } catch (e) { }
   };
 
   useEffect(() => {
@@ -56,42 +58,42 @@ export default function DashboardEvento() {
 
     socket.connect();
     socket.on('checkin', (data) => {
-        if (String(data.evento_id) === String(eventoId)) {
-            queryClient.invalidateQueries(['stats', eventoId]);
-        }
+      if (String(data.evento_id) === String(eventoId)) {
+        queryClient.invalidateQueries(['stats', eventoId]);
+      }
     });
 
     socket.on('hardware_alert', (data) => {
-        setPrinterAlert(data);
-        // Auto-limpa após 1 minuto ou se o problema for resolvido
-        setTimeout(() => setPrinterAlert(null), 60000);
+      setPrinterAlert(data);
+      // Auto-limpa após 1 minuto ou se o problema for resolvido
+      setTimeout(() => setPrinterAlert(null), 60000);
     });
 
     socket.on('vip_arrival', (data) => {
-        if (String(data.evento_id) === String(eventoId)) {
-            setVipAlert(data);
-            const audio = new Audio('/sounds/vip_arrival.mp3');
-            audio.volume = 0.6;
-            audio.play().catch(() => {});
-            // Esconde após 8 segundos
-            setTimeout(() => setVipAlert(null), 8000);
-        }
+      if (String(data.evento_id) === String(eventoId)) {
+        setVipAlert(data);
+        const audio = new Audio('/sounds/vip_arrival.mp3');
+        audio.volume = 0.6;
+        audio.play().catch(() => { });
+        // Esconde após 8 segundos
+        setTimeout(() => setVipAlert(null), 8000);
+      }
     });
 
     return () => {
-        socket.off('checkin');
-        socket.off('hardware_alert');
-        socket.off('vip_arrival');
+      socket.off('checkin');
+      socket.off('hardware_alert');
+      socket.off('vip_arrival');
     };
   }, [eventoId, queryClient]);
 
   // Monitor de Gargalo (Apenas Sonoro/Visual Simples)
   useEffect(() => {
     if (statsData?.isGargalo && !lastGargaloRef.current) {
-        playGargaloSound();
-        lastGargaloRef.current = true;
+      playGargaloSound();
+      lastGargaloRef.current = true;
     } else if (!statsData?.isGargalo) {
-        lastGargaloRef.current = false;
+      lastGargaloRef.current = false;
     }
   }, [statsData?.isGargalo]);
 
@@ -126,17 +128,17 @@ export default function DashboardEvento() {
 
   const handleSavePrinter = async (isLocal = false) => {
     if (isLocal) {
-        localStorage.setItem(`printer_ip_${eventoId}`, printerConfig.printer_ip);
-        localStorage.setItem(`printer_port_${eventoId}`, printerConfig.printer_port);
-        localStorage.setItem(`station_name_${eventoId}`, printerConfig.station_name);
-        alert('✅ Configuração desta estação salva localmente!');
+      localStorage.setItem(`printer_ip_${eventoId}`, printerConfig.printer_ip);
+      localStorage.setItem(`printer_port_${eventoId}`, printerConfig.printer_port);
+      localStorage.setItem(`station_name_${eventoId}`, printerConfig.station_name);
+      alert('✅ Configuração desta estação salva localmente!');
     } else {
-        const res = await apiRequest(`eventos/${eventoId}`, {
-          ...eventoData,
-          printer_ip: printerConfig.printer_ip,
-          printer_port: printerConfig.printer_port
-        }, 'PUT');
-        if (res.success) alert('🌍 Configuração padrão do evento atualizada!');
+      const res = await apiRequest(`eventos/${eventoId}`, {
+        ...eventoData,
+        printer_ip: printerConfig.printer_ip,
+        printer_port: printerConfig.printer_port
+      }, 'PUT');
+      if (res.success) alert('🌍 Configuração padrão do evento atualizada!');
     }
   };
 
@@ -174,100 +176,100 @@ export default function DashboardEvento() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 flex flex-col font-sans">
       <Menu />
-      
+
       {/* OVERLAY DE ALERTA VIP (ENTERPRISE UI) */}
       <AnimatePresence>
         {vipAlert && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -100, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 1.2, filter: 'blur(10px)' }}
             className="fixed top-24 left-1/2 -translate-x-1/2 z-[9999] w-[90%] max-w-md"
           >
             <div className="bg-gradient-to-br from-slate-900 to-indigo-950 p-1 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-amber-500/30 overflow-hidden">
-                <div className="relative p-6 flex items-center gap-5">
-                   <div className="absolute top-0 right-0 p-4">
-                      <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></div>
-                   </div>
-                   <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-white text-4xl shadow-lg">
-                      <i className="bi bi-person-check-fill"></i>
-                   </div>
-                   <div className="flex-1">
-                      <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] mb-1 block">Chegada de Autoridade</span>
-                      <h4 className="text-2xl font-black text-white leading-tight">{vipAlert.nome}</h4>
-                      <p className="text-amber-400/80 font-bold text-xs uppercase tracking-wider">{vipAlert.categoria}</p>
-                   </div>
-                   <button onClick={() => setVipAlert(null)} className="text-white/30 hover:text-white transition">
-                      <i className="bi bi-x-lg"></i>
-                   </button>
+              <div className="relative p-6 flex items-center gap-5">
+                <div className="absolute top-0 right-0 p-4">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></div>
                 </div>
-                <div className="h-1 bg-amber-500/20 w-full relative">
-                   <motion.div 
-                      initial={{ width: '100%' }}
-                      animate={{ width: '0%' }}
-                      transition={{ duration: 8, ease: 'linear' }}
-                      className="absolute inset-y-0 left-0 bg-amber-500"
-                   />
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-white text-4xl shadow-lg">
+                  <i className="bi bi-person-check-fill"></i>
                 </div>
+                <div className="flex-1">
+                  <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] mb-1 block">Chegada de Autoridade</span>
+                  <h4 className="text-2xl font-black text-white leading-tight">{vipAlert.nome}</h4>
+                  <p className="text-amber-400/80 font-bold text-xs uppercase tracking-wider">{vipAlert.categoria}</p>
+                </div>
+                <button onClick={() => setVipAlert(null)} className="text-white/30 hover:text-white transition">
+                  <i className="bi bi-x-lg"></i>
+                </button>
+              </div>
+              <div className="h-1 bg-amber-500/20 w-full relative">
+                <motion.div
+                  initial={{ width: '100%' }}
+                  animate={{ width: '0%' }}
+                  transition={{ duration: 8, ease: 'linear' }}
+                  className="absolute inset-y-0 left-0 bg-amber-500"
+                />
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       <div ref={dashboardRef} className="pt-20 p-4 md:p-10 w-full max-w-7xl mx-auto flex-1">
-        
+
         {/* HEADER ESPECÍFICO DO EVENTO */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700"
           style={{ borderTopColor: corPrimaria, borderTopWidth: '4px' }}>
-           <div>
-              <h1 className="text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-3 tracking-tight">
-                <span className="text-2xl">📊</span> 
-                {eventoData ? eventoData.nome : 'Carregando...'}
-              </h1>
-              <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 font-bold px-3 py-1 rounded-md text-sm mt-2 inline-block">Métricas e Portaria</span>
-           </div>
-           
-           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-             <button
-               onClick={() => window.open(`http://localhost:3001/api/convidados/exportar/${eventoId}`, '_blank')}
-               className="px-3 md:px-5 py-2.5 md:py-3 rounded-xl border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold uppercase text-xs hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition flex items-center gap-1.5"
-             >
-               <i className="bi bi-file-earmark-spreadsheet-fill"></i> <span className="hidden sm:inline">CSV</span>
-             </button>
-             <button
-               onClick={() => window.open(`${window.location.hostname === 'localhost' ? 'http://localhost:3001' : ''}/api/eventos/${eventoId}/backup`, '_blank')}
-               className="px-3 md:px-5 py-2.5 md:py-3 rounded-xl bg-slate-900 text-white font-bold uppercase text-xs hover:bg-black transition flex items-center gap-1.5 shadow-lg"
-             >
-               <i className="bi bi-box-seam-fill"></i> <span className="hidden sm:inline">Backup</span>
-             </button>
-             <button
-               onClick={exportarPDF}
-               className="px-3 md:px-5 py-2.5 md:py-3 rounded-xl border-2 border-rose-500 text-rose-600 dark:text-rose-400 font-bold uppercase text-xs hover:bg-rose-50 dark:hover:bg-rose-900/20 transition flex items-center gap-1.5"
-             >
-               <i className="bi bi-file-earmark-pdf-fill"></i> <span className="hidden sm:inline">PDF</span>
-             </button>
-              <button
-                onClick={() => setIsTotemModalOpen(true)}
-                className="px-5 py-3 rounded-xl border-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 font-bold uppercase text-xs hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition flex items-center gap-2"
-              >
-                ⚙️ Configurar Totem
-              </button>
-              <button 
-                onClick={() => navigate(`/label-designer/${eventoId}`)}
-                className="px-5 py-3 rounded-xl border-2 border-sky-500 text-sky-600 dark:text-sky-400 font-bold uppercase text-xs hover:bg-sky-50 dark:hover:bg-sky-900/20 transition flex items-center gap-2"
-              >
-                🎨 Designer de Credencial
-              </button>
-             <button onClick={() => navigate('/dashboard')} className="px-3 md:px-5 py-2.5 md:py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold uppercase text-xs hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center gap-1">
-               ← <span className="hidden sm:inline ml-1">Voltar</span>
-             </button>
-             <button 
-                onClick={() => navigate(`/convidados?evento=${eventoId}`)} 
-                className="bg-dynamic text-white font-black uppercase text-xs px-6 py-3 rounded-xl shadow-dynamic hover:scale-[1.02] transition-transform active:scale-95 flex items-center gap-2"
-             >
-               Operar Portaria ➔
-             </button>
-           </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-3 tracking-tight">
+              <span className="text-2xl">📊</span>
+              {eventoData ? eventoData.nome : 'Carregando...'}
+            </h1>
+            <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 font-bold px-3 py-1 rounded-md text-sm mt-2 inline-block">Métricas e Portaria</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <button
+              onClick={() => window.open(`http://localhost:3001/api/convidados/exportar/${eventoId}`, '_blank')}
+              className="px-3 md:px-5 py-2.5 md:py-3 rounded-xl border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold uppercase text-xs hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition flex items-center gap-1.5"
+            >
+              <i className="bi bi-file-earmark-spreadsheet-fill"></i> <span className="hidden sm:inline">CSV</span>
+            </button>
+            <button
+              onClick={() => window.open(`${window.location.hostname === 'localhost' ? 'http://localhost:3001' : ''}/api/eventos/${eventoId}/backup`, '_blank')}
+              className="px-3 md:px-5 py-2.5 md:py-3 rounded-xl bg-slate-900 text-white font-bold uppercase text-xs hover:bg-black transition flex items-center gap-1.5 shadow-lg"
+            >
+              <i className="bi bi-box-seam-fill"></i> <span className="hidden sm:inline">Backup</span>
+            </button>
+            <button
+              onClick={exportarPDF}
+              className="px-3 md:px-5 py-2.5 md:py-3 rounded-xl border-2 border-rose-500 text-rose-600 dark:text-rose-400 font-bold uppercase text-xs hover:bg-rose-50 dark:hover:bg-rose-900/20 transition flex items-center gap-1.5"
+            >
+              <i className="bi bi-file-earmark-pdf-fill"></i> <span className="hidden sm:inline">PDF</span>
+            </button>
+            <button
+              onClick={() => setIsTotemModalOpen(true)}
+              className="px-5 py-3 rounded-xl border-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 font-bold uppercase text-xs hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition flex items-center gap-2"
+            >
+              ⚙️ Configurar Totem
+            </button>
+            <button
+              onClick={() => navigate(`/label-designer/${eventoId}`)}
+              className="px-5 py-3 rounded-xl border-2 border-sky-500 text-sky-600 dark:text-sky-400 font-bold uppercase text-xs hover:bg-sky-50 dark:hover:bg-sky-900/20 transition flex items-center gap-2"
+            >
+              🎨 Designer de Credencial
+            </button>
+            <button onClick={() => navigate('/dashboard')} className="px-3 md:px-5 py-2.5 md:py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold uppercase text-xs hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center gap-1">
+              ← <span className="hidden sm:inline ml-1">Voltar</span>
+            </button>
+            <button
+              onClick={() => navigate(`/convidados?evento=${eventoId}`)}
+              className="bg-dynamic text-white font-black uppercase text-xs px-6 py-3 rounded-xl shadow-dynamic hover:scale-[1.02] transition-transform active:scale-95 flex items-center gap-2"
+            >
+              Operar Portaria ➔
+            </button>
+          </div>
         </div>
 
         {eventoId && (
@@ -288,9 +290,9 @@ export default function DashboardEvento() {
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="w-full bg-slate-100 dark:bg-slate-700 h-6 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className={`h-full transition-all duration-1000 ease-out rounded-full ${((stats.presentes / stats.total) * 100) <= 70 ? 'bg-emerald-500' : ((stats.presentes / stats.total) * 100) <= 90 ? 'bg-amber-500' : 'bg-red-500'}`}
                     style={{ width: `${Math.min(((stats.presentes / stats.total) * 100), 100)}%` }}
                   ></div>
@@ -298,123 +300,121 @@ export default function DashboardEvento() {
 
                 {/* VISUAL HEATMAP AREA */}
                 <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-700">
-                   <div className="flex justify-between items-center mb-6">
-                      <div>
-                         <h4 className="text-lg font-bold text-slate-800 dark:text-white uppercase tracking-tight">Comparativo Estratégico Multi-Dias</h4>
-                         <p className="text-xs text-slate-500 font-medium">Fluxo de entrada cruzado por horário e data de referência.</p>
-                      </div>
-                      <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
-                        <button 
-                          onClick={() => setComparativoAtivo(true)}
-                          className={`px-4 py-1.5 text-[10px] font-black uppercase rounded-lg transition ${comparativoAtivo ? 'bg-white dark:bg-slate-700 shadow-sm text-sky-500' : 'text-slate-500'}`}
-                        >Comparativo</button>
-                        <button 
-                          onClick={() => setComparativoAtivo(false)}
-                          className={`px-4 py-1.5 text-[10px] font-black uppercase rounded-lg transition ${!comparativoAtivo ? 'bg-white dark:bg-slate-700 shadow-sm text-sky-500' : 'text-slate-500'}`}
-                        >Fluxo Simples</button>
-                      </div>
-                   </div>
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-800 dark:text-white uppercase tracking-tight">Comparativo Estratégico Multi-Dias</h4>
+                      <p className="text-xs text-slate-500 font-medium">Fluxo de entrada cruzado por horário e data de referência.</p>
+                    </div>
+                    <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
+                      <button
+                        onClick={() => setComparativoAtivo(true)}
+                        className={`px-4 py-1.5 text-[10px] font-black uppercase rounded-lg transition ${comparativoAtivo ? 'bg-white dark:bg-slate-700 shadow-sm text-sky-500' : 'text-slate-500'}`}
+                      >Comparativo</button>
+                      <button
+                        onClick={() => setComparativoAtivo(false)}
+                        className={`px-4 py-1.5 text-[10px] font-black uppercase rounded-lg transition ${!comparativoAtivo ? 'bg-white dark:bg-slate-700 shadow-sm text-sky-500' : 'text-slate-500'}`}
+                      >Fluxo Simples</button>
+                    </div>
+                  </div>
 
-                   <div className="h-[350px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        {comparativoAtivo && stats.comparativo ? (
-                          <LineChart data={stats.comparativo.dados} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                            <XAxis dataKey="hora" stroke="#94a3b8" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
-                            <YAxis stroke="#94a3b8" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
-                            <Tooltip 
-                               contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
+                  <div className="h-[350px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      {comparativoAtivo && stats.comparativo ? (
+                        <LineChart data={stats.comparativo.dados} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                          <XAxis dataKey="hora" stroke="#94a3b8" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
+                          <Tooltip
+                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
+                          />
+                          <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                          {stats.comparativo.dias.map((dia, idx) => (
+                            <Line
+                              key={dia}
+                              type="monotone"
+                              dataKey={dia}
+                              name={`Dia 0${idx + 1} (${dia})`}
+                              stroke={['#0ea5e9', '#f59e0b', '#10b981', '#6366f1'][idx % 4]}
+                              strokeWidth={4}
+                              dot={{ r: 4, strokeWidth: 2, fill: 'white' }}
+                              activeDot={{ r: 8, strokeWidth: 0 }}
+                              animationDuration={1500}
                             />
-                            <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
-                            {stats.comparativo.dias.map((dia, idx) => (
-                              <Line 
-                                key={dia} 
-                                type="monotone" 
-                                dataKey={dia} 
-                                name={`Dia 0${idx+1} (${dia})`}
-                                stroke={['#0ea5e9', '#f59e0b', '#10b981', '#6366f1'][idx % 4]} 
-                                strokeWidth={4}
-                                dot={{ r: 4, strokeWidth: 2, fill: 'white' }}
-                                activeDot={{ r: 8, strokeWidth: 0 }}
-                                animationDuration={1500}
-                              />
-                            ))}
-                          </LineChart>
-                        ) : (
-                          <AreaChart data={stats.grafico}>
-                            <defs>
-                              <linearGradient id="colorQtd" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={corPrimaria} stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor={corPrimaria} stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <XAxis dataKey="hora" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
-                            <YAxis stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                            <Area type="monotone" dataKey="qtd" stroke={corPrimaria} strokeWidth={3} fillOpacity={1} fill="url(#colorQtd)" />
-                          </AreaChart>
-                        )}
-                      </ResponsiveContainer>
-                   </div>
+                          ))}
+                        </LineChart>
+                      ) : (
+                        <AreaChart data={stats.grafico}>
+                          <defs>
+                            <linearGradient id="colorQtd" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor={corPrimaria} stopOpacity={0.3} />
+                              <stop offset="95%" stopColor={corPrimaria} stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="hora" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                          <Area type="monotone" dataKey="qtd" stroke={corPrimaria} strokeWidth={3} fillOpacity={1} fill="url(#colorQtd)" />
+                        </AreaChart>
+                      )}
+                    </ResponsiveContainer>
+                  </div>
 
-                   {/* PERFORMANCE DOS GUICHÊS (PILLAR 5) */}
-                   <div className="mt-12">
-                      <h4 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-                        <i className="bi bi-speedometer2 text-sky-500"></i> Heatmap de Operação (Guichês)
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {stats.produtividade?.map((op, idx) => (
-                          <div key={idx} className="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
-                             <div className="flex justify-between items-start mb-3">
-                                <div>
-                                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Ponto de Acesso</p>
-                                   <h5 className="font-bold text-slate-800 dark:text-white truncate">{op.station || 'Portal Principal'}</h5>
-                                </div>
-                                <span className="bg-sky-500 text-white text-[10px] font-black px-2 py-0.5 rounded-lg">LIVE</span>
-                             </div>
-                             <div className="flex items-end gap-2 mb-2">
-                                <span className="text-2xl font-black text-slate-900 dark:text-white">{op.qtd}</span>
-                                <span className="text-[10px] font-bold text-slate-500 mb-1">Check-ins realizados</span>
-                             </div>
-                             <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-sky-500"
-                                  style={{ width: `${Math.min((op.qtd / stats.total) * 400, 100)}%` }}
-                                ></div>
-                             </div>
+                  {/* PERFORMANCE DOS GUICHÊS (PILLAR 5) */}
+                  <div className="mt-12">
+                    <h4 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white mb-6 flex items-center gap-2">
+                      <i className="bi bi-speedometer2 text-sky-500"></i> Heatmap de Operação (Guichês)
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {stats.produtividade?.map((op, idx) => (
+                        <div key={idx} className="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Ponto de Acesso</p>
+                              <h5 className="font-bold text-slate-800 dark:text-white truncate">{op.station || 'Portal Principal'}</h5>
+                            </div>
+                            <span className="bg-sky-500 text-white text-[10px] font-black px-2 py-0.5 rounded-lg">LIVE</span>
                           </div>
-                        ))}
-                      </div>
-                   </div>
-                </div>
-                      <span className="text-[10px] font-black text-sky-500 uppercase tracking-[0.2em]">Densidade de Fluxo (Últimas 24h)</span>
-                      <div className="flex gap-1">
-                         {[1,2,3,4,5].map(i => <div key={i} className="w-2 h-2 rounded-sm" style={{ opacity: i*0.2, backgroundColor: '#0ea5e9' }}></div>)}
-                      </div>
-                   </div>
-                   <div className="flex gap-1 h-3 w-full">
-                      {Array.from({ length: 24 }).map((_, i) => {
-                         const hourData = stats.grafico?.find(g => parseInt(g.hora) === i);
-                         const intensity = hourData ? Math.min(hourData.qtd / 50, 1) : 0;
-                         return (
-                            <div 
-                               key={i} 
-                               className="flex-1 rounded-sm transition-all duration-500 hover:scale-y-150 cursor-pointer"
-                               style={{ 
-                                  backgroundColor: intensity > 0 ? '#0ea5e9' : '#1e293b',
-                                  opacity: intensity > 0 ? 0.2 + (intensity * 0.8) : 0.3
-                               }}
-                               title={`${i}h: ${hourData?.qtd || 0} check-ins`}
+                          <div className="flex items-end gap-2 mb-2">
+                            <span className="text-2xl font-black text-slate-900 dark:text-white">{op.qtd}</span>
+                            <span className="text-[10px] font-bold text-slate-500 mb-1">Check-ins realizados</span>
+                          </div>
+                          <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-sky-500"
+                              style={{ width: `${Math.min((op.qtd / stats.total) * 400, 100)}%` }}
                             ></div>
-                         );
-                      })}
-                   </div>
-                   <div className="flex justify-between mt-2">
-                      <span className="text-[8px] font-bold text-slate-600 uppercase">00h</span>
-                      <span className="text-[8px] font-bold text-slate-600 uppercase">12h</span>
-                      <span className="text-[8px] font-bold text-slate-600 uppercase">23h</span>
-                   </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black text-sky-500 uppercase tracking-[0.2em]">Densidade de Fluxo (Últimas 24h)</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="w-2 h-2 rounded-sm" style={{ opacity: i * 0.2, backgroundColor: '#0ea5e9' }}></div>)}
+                  </div>
+                  <div className="flex gap-1 h-3 w-full">
+                    {Array.from({ length: 24 }).map((_, i) => {
+                      const hourData = stats.grafico?.find(g => parseInt(g.hora) === i);
+                      const intensity = hourData ? Math.min(hourData.qtd / 50, 1) : 0;
+                      return (
+                        <div
+                          key={i}
+                          className="flex-1 rounded-sm transition-all duration-500 hover:scale-y-150 cursor-pointer"
+                          style={{
+                            backgroundColor: intensity > 0 ? '#0ea5e9' : '#1e293b',
+                            opacity: intensity > 0 ? 0.2 + (intensity * 0.8) : 0.3
+                          }}
+                          title={`${i}h: ${hourData?.qtd || 0} check-ins`}
+                        ></div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-between mt-2">
+                    <span className="text-[8px] font-bold text-slate-600 uppercase">00h</span>
+                    <span className="text-[8px] font-bold text-slate-600 uppercase">12h</span>
+                    <span className="text-[8px] font-bold text-slate-600 uppercase">23h</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -423,11 +423,11 @@ export default function DashboardEvento() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border-l-[6px] border-emerald-500 shadow-sm flex flex-col transition-colors col-span-2">
                 <h3 className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs mb-1">Faturamento</h3>
-                <h1 className="text-3xl font-black text-slate-900 dark:text-white"><span className="text-emerald-500 text-lg mr-1">R$</span>{stats.receita?.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h1>
+                <h1 className="text-3xl font-black text-slate-900 dark:text-white"><span className="text-emerald-500 text-lg mr-1">R$</span>{stats.receita?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h1>
               </div>
               <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border-l-[6px] border-indigo-500 shadow-sm flex flex-col transition-colors">
                 <h3 className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs mb-1">Ticket Médio</h3>
-                <h1 className="text-3xl font-black text-slate-900 dark:text-white"><span className="text-indigo-500 text-sm mr-1">R$</span>{(stats.total > 0 ? (stats.receita / stats.total) : 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h1>
+                <h1 className="text-3xl font-black text-slate-900 dark:text-white"><span className="text-indigo-500 text-sm mr-1">R$</span>{(stats.total > 0 ? (stats.receita / stats.total) : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h1>
               </div>
               <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border-l-[6px] border-sky-500 shadow-sm flex flex-col transition-colors">
                 <h3 className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs mb-1">Inscritos</h3>
@@ -452,77 +452,77 @@ export default function DashboardEvento() {
 
             {/* [PHASE 22] RADAR PREDITIVO (IA WAR ROOM) */}
             <div className="bg-slate-900 border-2 border-sky-500/30 p-6 md:p-8 rounded-3xl shadow-2xl relative overflow-hidden group">
-               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <i className="bi bi-robot text-8xl text-sky-500"></i>
-               </div>
-               <div className="absolute top-[-50%] left-[-20%] w-96 h-96 bg-sky-500/5 rounded-full blur-3xl animate-pulse"></div>
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i className="bi bi-robot text-8xl text-sky-500"></i>
+              </div>
+              <div className="absolute top-[-50%] left-[-20%] w-96 h-96 bg-sky-500/5 rounded-full blur-3xl animate-pulse"></div>
 
-               <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
-                  <div className="flex items-center gap-6">
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-sky-500 rounded-full animate-ping opacity-25"></div>
-                        <div className="w-20 h-20 bg-sky-500 rounded-full flex items-center justify-center text-white text-4xl shadow-lg shadow-sky-500/40">
-                            <i className="bi bi-radar"></i>
-                        </div>
+              <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+                <div className="flex items-center gap-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-sky-500 rounded-full animate-ping opacity-25"></div>
+                    <div className="w-20 h-20 bg-sky-500 rounded-full flex items-center justify-center text-white text-4xl shadow-lg shadow-sky-500/40">
+                      <i className="bi bi-radar"></i>
                     </div>
-                    <div>
-                        <h2 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-                           Radar Preditivo 
-                           <span className="text-sky-500 text-xs font-bold bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">IA ACTIVE</span>
-                           {stats.isGargalo && (
-                             <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]">
-                               ⚠️ GARGALO DETECTADO
-                             </span>
-                           )}
-                        </h2>
-                        <p className="text-slate-400 font-medium">Análise de fluxo em tempo real e projeção de lotação.</p>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                      Radar Preditivo
+                      <span className="text-sky-500 text-xs font-bold bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">IA ACTIVE</span>
+                      {stats.isGargalo && (
+                        <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]">
+                          ⚠️ GARGALO DETECTADO
+                        </span>
+                      )}
+                    </h2>
+                    <p className="text-slate-400 font-medium">Análise de fluxo em tempo real e projeção de lotação.</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-6 lg:gap-12">
+                  <div className="text-center">
+                    <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Ritmo Atual</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-black text-white">{stats.velocidadeAtual || 0}</span>
+                      <span className="text-xs font-bold text-sky-500 uppercase tracking-tighter">convidados / hora</span>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap justify-center gap-6 lg:gap-12">
-                     <div className="text-center">
-                        <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Ritmo Atual</span>
-                        <div className="flex items-baseline gap-2">
-                           <span className="text-4xl font-black text-white">{stats.velocidadeAtual || 0}</span>
-                           <span className="text-xs font-bold text-sky-500 uppercase tracking-tighter">convidados / hora</span>
-                        </div>
-                     </div>
+                  <div className="w-px h-12 bg-slate-800 hidden lg:block"></div>
 
-                     <div className="w-px h-12 bg-slate-800 hidden lg:block"></div>
-
-                     <div className="text-center">
-                        <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Horário de Pico</span>
-                        <div className="flex items-baseline gap-2">
-                           {stats.grafico && stats.grafico.length > 0 ? (
-                              <span className="text-4xl font-black text-rose-500">
-                                {(() => {
-                                  const sorted = [...stats.grafico].sort((a, b) => b.qtd - a.qtd);
-                                  return sorted[0]?.hora || '--:--';
-                                })()}
-                              </span>
-                           ) : (
-                              <span className="text-xl font-bold text-slate-600 italic">--:--</span>
-                           )}
-                        </div>
-                     </div>
-
-                     <div className="w-px h-12 bg-slate-800 hidden lg:block"></div>
-
-                     <div className="text-center">
-                        <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Estimativa de Lotação Total</span>
-                        <div className="flex items-baseline gap-2">
-                           {stats.previsaoLotacao ? (
-                              <>
-                                <span className="text-4xl font-black text-emerald-500">~ {stats.previsaoLotacao}</span>
-                                <span className="text-xs font-bold text-emerald-500/70 uppercase tracking-tighter">minutos restantes</span>
-                              </>
-                           ) : (
-                              <span className="text-xl font-bold text-slate-600 italic">Calculando fluxo...</span>
-                           )}
-                        </div>
-                     </div>
+                  <div className="text-center">
+                    <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Horário de Pico</span>
+                    <div className="flex items-baseline gap-2">
+                      {stats.grafico && stats.grafico.length > 0 ? (
+                        <span className="text-4xl font-black text-rose-500">
+                          {(() => {
+                            const sorted = [...stats.grafico].sort((a, b) => b.qtd - a.qtd);
+                            return sorted[0]?.hora || '--:--';
+                          })()}
+                        </span>
+                      ) : (
+                        <span className="text-xl font-bold text-slate-600 italic">--:--</span>
+                      )}
+                    </div>
                   </div>
-               </div>
+
+                  <div className="w-px h-12 bg-slate-800 hidden lg:block"></div>
+
+                  <div className="text-center">
+                    <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Estimativa de Lotação Total</span>
+                    <div className="flex items-baseline gap-2">
+                      {stats.previsaoLotacao ? (
+                        <>
+                          <span className="text-4xl font-black text-emerald-500">~ {stats.previsaoLotacao}</span>
+                          <span className="text-xs font-bold text-emerald-500/70 uppercase tracking-tighter">minutos restantes</span>
+                        </>
+                      ) : (
+                        <span className="text-xl font-bold text-slate-600 italic">Calculando fluxo...</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors mt-8">
@@ -548,7 +548,7 @@ export default function DashboardEvento() {
                         <span className="text-xs font-bold text-slate-400">/ {cat.total}</span>
                       </div>
                       <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full rounded-full transition-all duration-1000"
                           style={{ width: `${perc}%`, backgroundColor: 'var(--p-color)' }}
                         ></div>
@@ -570,15 +570,15 @@ export default function DashboardEvento() {
                     <AreaChart data={stats.grafico}>
                       <defs>
                         <linearGradient id="colorQtd" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={corPrimaria} stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor={corPrimaria} stopOpacity={0}/>
+                          <stop offset="5%" stopColor={corPrimaria} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={corPrimaria} stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                       <XAxis dataKey="hora" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
                       <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
-                      <Tooltip 
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} 
+                      <Tooltip
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
                         itemStyle={{ color: corPrimaria, fontWeight: '900' }}
                       />
                       <Area type="monotone" dataKey="qtd" stroke={corPrimaria} strokeWidth={4} fillOpacity={1} fill="url(#colorQtd)" />
@@ -586,10 +586,10 @@ export default function DashboardEvento() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              
+
               <div className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors">
                 <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2">
-                  <i className={`bi ${stats.statsDia && stats.statsDia.length > 1 ? 'bi-calendar-check-fill' : 'bi-ticket-perforated-fill'} text-2xl text-sky-500`}></i> 
+                  <i className={`bi ${stats.statsDia && stats.statsDia.length > 1 ? 'bi-calendar-check-fill' : 'bi-ticket-perforated-fill'} text-2xl text-sky-500`}></i>
                   {stats.statsDia && stats.statsDia.length > 1 ? 'Presença por Dia' : 'Absenteísmo (No-Show)'}
                 </h3>
                 <div className="w-full h-72 flex items-center justify-center">
@@ -605,15 +605,15 @@ export default function DashboardEvento() {
                   ) : stats.total > 0 ? (
                     <ResponsiveContainer>
                       <PieChart>
-                        <Pie 
+                        <Pie
                           data={[
-                             { name: "Presentes", value: stats.presentes },
-                             { name: "Faltantes", value: stats.ausentes }
-                          ]} 
-                          dataKey="value" 
-                          cx="50%" 
-                          cy="50%" 
-                          innerRadius={70} 
+                            { name: "Presentes", value: stats.presentes },
+                            { name: "Faltantes", value: stats.ausentes }
+                          ]}
+                          dataKey="value"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={70}
                           outerRadius={90}
                           stroke="none"
                         >
@@ -621,7 +621,7 @@ export default function DashboardEvento() {
                           <Cell key="cell-1" fill="#f43f5e" />
                         </Pie>
                         <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                        <Tooltip 
+                        <Tooltip
                           contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                         />
                       </PieChart>
@@ -635,7 +635,7 @@ export default function DashboardEvento() {
 
             {/* PRODUTIVIDADE E LIVE FEED */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-              
+
               <div className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors">
                 <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2">
                   <i className="bi bi-person-workspace text-2xl text-sky-500"></i> Produtividade
@@ -657,7 +657,7 @@ export default function DashboardEvento() {
                 </div>
               </div>
 
-              <WarRoomPanel 
+              <WarRoomPanel
                 ultimos={stats.ultimos}
                 anomaliasRecentes={stats.anomaliasRecentes}
                 printerAlert={printerAlert}
@@ -682,50 +682,50 @@ export default function DashboardEvento() {
                   <i className="bi bi-printer-fill text-2xl text-sky-500"></i> Impressora Brother
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">Configuração para o modelo QL-820NWB (TCP 9100).</p>
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-black text-slate-400 uppercase mb-1">Endereço IP</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="Ex: 192.168.1.100"
                       value={printerConfig.printer_ip}
-                      onChange={(e) => setPrinterConfig({...printerConfig, printer_ip: e.target.value})}
+                      onChange={(e) => setPrinterConfig({ ...printerConfig, printer_ip: e.target.value })}
                       className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-mono"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-black text-slate-400 uppercase mb-1">Porta TCP</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={printerConfig.printer_port}
-                      onChange={(e) => setPrinterConfig({...printerConfig, printer_port: parseInt(e.target.value) || 9100})}
+                      onChange={(e) => setPrinterConfig({ ...printerConfig, printer_port: parseInt(e.target.value) || 9100 })}
                       className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-mono"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-black text-slate-400 uppercase mb-1">Nome da Estação (Ex: Desktop-01)</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="Identificador da máquina"
                       value={printerConfig.station_name}
-                      onChange={(e) => setPrinterConfig({...printerConfig, station_name: e.target.value})}
+                      onChange={(e) => setPrinterConfig({ ...printerConfig, station_name: e.target.value })}
                       className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
                     />
                   </div>
-                  <button 
+                  <button
                     onClick={() => handleSavePrinter(true)}
                     className="w-full p-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold cursor-pointer transition-all active:scale-95 shadow-md mt-2 flex items-center justify-center gap-2"
                   >
                     <i className="bi bi-floppy-fill"></i> SALVAR CONFIGURAÇÃO LOCAL
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleSavePrinter(false)}
                     className="w-full p-4 border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 rounded-xl font-bold text-xs uppercase hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all mt-2 flex items-center justify-center gap-2"
                   >
                     <i className="bi bi-globe-americas"></i> DEFINIR COMO PADRÃO GLOBAL
                   </button>
-                  <button 
+                  <button
                     disabled={testing}
                     onClick={handleTestPrinter}
                     className={`w-full p-4 border-2 rounded-xl font-bold text-xs uppercase transition-all mt-2 flex items-center justify-center gap-2 ${testing ? 'bg-slate-100 border-slate-200 text-slate-400' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer'}`}
@@ -741,10 +741,10 @@ export default function DashboardEvento() {
         )}
       </div>
 
-      <TotemConfigModal 
-        isOpen={isTotemModalOpen} 
-        onClose={() => setIsTotemModalOpen(false)} 
-        evento={eventoData} 
+      <TotemConfigModal
+        isOpen={isTotemModalOpen}
+        onClose={() => setIsTotemModalOpen(false)}
+        evento={eventoData}
         onUpdate={() => queryClient.invalidateQueries(['evento', eventoId])}
       />
     </div>

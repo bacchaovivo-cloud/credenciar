@@ -172,7 +172,7 @@ export default function Logs() {
                              <i className="bi bi-shield-fill-check"></i> Assinado
                            </div>
                            <span className="text-[9px] font-mono text-slate-400 truncate w-24" title={log.sec_hash}>
-                             {log.sec_hash.substring(0, 16)}...
+                             {log.sec_hash ? log.sec_hash.substring(0, 16) : ''}...
                            </span>
                         </div>
                       ) : (

@@ -36,29 +36,34 @@ export const ZenithEdge = {
     },
 
     // Busca um convidado no banco local comparando descritores biométricos (Offline FaceID)
-    async buscarPorBiometria(descriptor, compareFunction) {
+    // Evoluído v2: Agora utiliza o biometricWorker para performance máxima
+    async buscarPorBiometria(descriptor) {
         const convidadosComBio = await dbLocal.convidados
             .filter(c => !!c.face_descriptor)
             .toArray();
 
-        let bestMatch = null;
-        let minDistance = 0.6; // Threshold padrão: abaixo de 0.6 é a mesma pessoa
+        if (convidadosComBio.length === 0) return null;
 
-        for (const convidado of convidadosComBio) {
-            try {
-                const savedDescriptor = new Float32Array(JSON.parse(convidado.face_descriptor));
-                const distance = compareFunction(descriptor, savedDescriptor);
-                
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    bestMatch = convidado;
-                }
-            } catch (e) {
-                console.error("Erro ao comparar biometria local:", e);
-            }
-        }
+        return new Promise((resolve, reject) => {
+            const worker = new Worker(new URL('../workers/biometricWorker.js', import.meta.url), { type: 'module' });
+            
+            worker.onmessage = (e) => {
+                worker.terminate();
+                if (e.data.error) reject(e.data.error);
+                else resolve(e.data.bestMatch);
+            };
 
-        return bestMatch;
+            worker.onerror = (err) => {
+                worker.terminate();
+                reject(err);
+            };
+
+            worker.postMessage({ 
+                descriptor: Array.from(descriptor), 
+                convidadosComBio,
+                threshold: 0.55 // Ajustado para ser levemente mais rigoroso no Edge Mode
+            });
+        });
     },
 
     // Busca rápida via QR ou CPF offline (Fix #9: Filtra no servidor Dexie, não carrega tudo na RAM)

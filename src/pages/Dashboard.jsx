@@ -135,7 +135,7 @@ export default function Dashboard() {
         {/* Gráfico comparativo */}
         {consolidado.length > 1 && (
           <ComparisonChart data={consolidado.slice(0, 8).map(e => ({
-            nome: e.nome.length > 14 ? e.nome.substring(0, 14) + '…' : e.nome,
+            nome: (e.nome || 'Evento sem nome').length > 14 ? (e.nome || '').substring(0, 14) + '…' : (e.nome || 'Evento sem nome'),
             inscritos: parseInt(e.total) || 0,
             presentes: parseInt(e.presentes) || 0,
             cor: e.cor_primaria || '#0ea5e9',
