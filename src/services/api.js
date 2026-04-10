@@ -28,23 +28,26 @@ export const apiRequest = async (endpoint, body = null, method = null) => {
 
   try {
     const response = await fetch(url, options);
+    let data;
+    try {
+      data = await response.json();
+    } catch (err) {
+      data = { success: false, message: 'Falha ao processar resposta do servidor.' };
+    }
     
     // Sessão expirada: limpa e redireciona
     if (response.status === 401 || response.status === 403) {
-      const errorData = await response.json().catch(() => ({}));
-      if (errorData.message?.includes('Token Rejeitado') || errorData.message?.includes('Token não fornecido')) {
+      if (data.message?.includes('Token Rejeitado') || data.message?.includes('Token não fornecido')) {
         localStorage.removeItem('userToken');
-        localStorage.removeItem('token'); // Garantindo a limpeza da chave usada no App.jsx
+        localStorage.removeItem('token'); 
         localStorage.removeItem('userRole');
         localStorage.removeItem('userName');
         localStorage.removeItem('userPermissions');
-        // Preserva cache Edge e configurações operacionais
         window.location.href = '/';
         return { success: false, message: 'Sessão expirada. Faça login novamente.' };
       }
     }
 
-    const data = await response.json();
     return data;
   } catch (err) {
     console.warn(`⚠️ [OFFLINE-MODE] Falha em ${endpoint}:`, err.message);

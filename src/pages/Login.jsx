@@ -14,6 +14,7 @@ export default function Login() {
 
   const storeSession = (res) => {
     localStorage.setItem('userToken', res.token);
+    localStorage.setItem('token', res.token); // 🔐 ADICIONADO: Chave esperada pelo App.jsx e ProtectedRoute
     localStorage.setItem('userRole', res.role);
     localStorage.setItem('evento_id', res.evento_id || '');
     localStorage.setItem('userName', res.nome);
