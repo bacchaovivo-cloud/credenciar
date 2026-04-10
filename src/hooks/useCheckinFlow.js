@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import confetti from 'canvas-confetti';
 import { apiRequest } from '../services/api';
-import { ZenithEdge } from '../services/dbLocal';
+import { ZenithEdge, dbLocal } from '../services/dbLocal';
 
 /**
  * ⚡ ZENITH INTELLIGENCE: GLOBAL CHECK-IN FLOW HOOK
@@ -90,16 +90,24 @@ export function useCheckinFlow({
     setIsProcessing(true);
 
     try {
+      // [OPTIMIZATION] Verificação preventiva no Zenith Edge (Mesmo Online)
+      const convLocal = await ZenithEdge.buscarPorQr(eventoAtivo, code);
+      if (convLocal && convLocal.status_checkin === 1) {
+        triggerFeedback('duplicate', convLocal.nome, convLocal.categoria);
+        setIsProcessing(false);
+        return;
+      }
+
       if (!isOnline || isModoEdge) {
         // MODO EDGE: Registro Atômico no IndexedDB com UX Nativa
-        const convOff = await ZenithEdge.buscarPorQr(eventoAtivo, code);
-        const feedbackName = convOff ? convOff.nome : 'REGISTRO EDGE SALVO';
-        const feedbackCat = convOff ? convOff.categoria : 'Sincronização Pendente';
+        // const convOff = await ZenithEdge.buscarPorQr(eventoAtivo, code); // Já buscado acima
+        const feedbackName = convLocal ? convLocal.nome : 'REGISTRO EDGE SALVO';
+        const feedbackCat = convLocal ? convLocal.categoria : 'Sincronização Pendente';
 
         await ZenithEdge.registrarCheckinOffline(code, {
             evento_id: eventoAtivo,
             station_id: printerConfig.station || 'EDGE_NODE',
-            nome: convOff ? convOff.nome : null,
+            nome: convLocal ? convLocal.nome : null,
             ...metadata
         });
         
@@ -119,11 +127,16 @@ export function useCheckinFlow({
 
         if (res.success) {
           const cat = res.participante?.categoria;
+          // Atualiza status local para evitar re-checkin (optimistic, non-blocking)
+          try { dbLocal.convidados.where('qrcode').equals(code).modify({ status_checkin: 1 }); } catch (_) {}
+          
           triggerFeedback('success', res.participante?.nome || 'Convidado', cat);
           queryClient.invalidateQueries(['convidados', eventoAtivo]);
         } else {
-          // Fix #19: res.nome não existe em erros; usar res.message
           const isDuplicate = res.message?.includes('DUPLICIDADE') || res.message?.includes('já utilizado');
+          if (isDuplicate) {
+            try { dbLocal.convidados.where('qrcode').equals(code).modify({ status_checkin: 1 }); } catch (_) {}
+          }
           triggerFeedback(isDuplicate ? 'duplicate' : 'error', res.message || 'Erro');
         }
       }

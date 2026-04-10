@@ -277,10 +277,12 @@ export const getEventTablesList = (eventoId) => {
   if (isNaN(id) || id <= 0) {
     throw new Error(`[SECURITY] eventoId inválido recebido: "${eventoId}" — operação abortada.`);
   }
-  return {
-    convTable: `convidados_ev${id}`,
-    logsTable: `checkin_logs_ev${id}`
-  };
+  const convTable = `convidados_ev${id}`;
+  const logsTable = `checkin_logs_ev${id}`;
+  // Validação defensiva: garante que nomes gerados correspondem ao padrão esperado
+  validateTableName(convTable);
+  validateTableName(logsTable);
+  return { convTable, logsTable };
 };
 
 export const registrarLog = async (usuarioId, acao, detalhes, ip, userAgent = null) => {

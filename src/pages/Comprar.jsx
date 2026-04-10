@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { apiRequest } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../components/Toast';
 
 export default function Comprar() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function Comprar() {
   const [form, setForm] = useState({ nome: '', cpf: '', categoria: 'PISTA' });
   const [foto, setFoto] = useState(null);
   const [cameraAtiva, setCameraAtiva] = useState(false);
+  const { toast } = useToast();
   
   const [etapa, setEtapa] = useState(1); // 1: form, 2: pix, 3: ticket
   const [pixPayload, setPixPayload] = useState('');
@@ -31,7 +33,7 @@ export default function Comprar() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       if (videoRef.current) videoRef.current.srcObject = stream;
     } catch (err) {
-      alert("Permissão de câmera negada.");
+      toast.error("Permissão de câmera negada.");
     }
   };
 
@@ -56,7 +58,7 @@ export default function Comprar() {
 
   const gerarPix = (e) => {
     e.preventDefault();
-    if (!eventoSelecionado || !form.nome) return alert("Preencha todos os campos obrigatórios");
+    if (!eventoSelecionado || !form.nome) return toast.error("Preencha todos os campos obrigatórios");
     setPixPayload(`00020126580014br.gov.bcb.pix0136bacch-producoes-${Date.now()}5204000053039865405${precos[form.categoria]}5802BR5915Bacch Producoes6009Sao Paulo62070503***63045E1B`);
     setEtapa(2);
   };
@@ -165,7 +167,7 @@ export default function Comprar() {
               {pixPayload}
             </div>
 
-            <button onClick={() => { navigator.clipboard.writeText(pixPayload); alert("Chave Copiada!"); }} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl mb-4 hover:bg-slate-700 transition">Copiar Pix Copia e Cola</button>
+            <button onClick={() => { navigator.clipboard.writeText(pixPayload); toast.success("Chave Copiada!"); }} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl mb-4 hover:bg-slate-700 transition">Copiar Pix Copia e Cola</button>
 
             <button onClick={confirmarPagamento} className="w-full bg-emerald-500 hover:bg-emerald-600 focus:ring-4 ring-emerald-200 text-white font-black py-4 rounded-xl shadow-lg transition-all hover:scale-[1.02]">
               SIMULAR: Confirmar Pagamento

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { useEffect, lazy, Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { AppProvider } from './context/AppContext';
+import { ToastProvider } from './components/Toast';
 import PageTransitions from './components/PageTransitions';
 
 // Lazy loading das páginas para melhor performance inicial
@@ -118,18 +119,20 @@ function App() {
 
   return (
     <AppProvider>
-      <Router>
-        <Suspense fallback={
-          <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-12 h-12 border-4 border-sky-500/20 border-t-sky-500 rounded-full animate-spin"></div>
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest animate-pulse">Iniciando Sistema...</span>
+      <ToastProvider>
+        <Router>
+          <Suspense fallback={
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 border-4 border-sky-500/20 border-t-sky-500 rounded-full animate-spin"></div>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest animate-pulse">Iniciando Sistema...</span>
+              </div>
             </div>
-          </div>
-        }>
-          <AnimatedRoutes />
-        </Suspense>
-      </Router>
+          }>
+            <AnimatedRoutes />
+          </Suspense>
+        </Router>
+      </ToastProvider>
     </AppProvider>
   );
 }

@@ -98,8 +98,13 @@ if (env.NODE_ENV === 'production') {
 
 app.use(errorHandler);
 
+import { HardwarePollingService } from './backend/services/hardwarePollingService.js';
+
+// ... (existing code)
+
 migrate().then(() => {
     BrotherService.setIo(io);
+    HardwarePollingService.start(io);
 });
 
 const PORT = env.PORT || 3001;

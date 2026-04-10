@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import ExcelJS from 'exceljs';
 import pLimit from 'p-limit';
 import { z } from 'zod';
-import db, { registrarLog, getEventTablesList } from '../config/db.js';
+import db, { registrarLog, getEventTablesList, validateTableName } from '../config/db.js';
 import { generateSignature, checkFraudHeuristics, encryptBiometry, decryptBiometry } from '../utils/forensic.js';
 import { getStatsEvento } from './zenithAnalyticsController.js';
 import { CheckinService } from '../services/checkinService.js';
@@ -48,6 +48,8 @@ export const getConvidados = async (req, res) => {
   }
 
   const { convTable, logsTable } = getEventTablesList(eventoId);
+  validateTableName(convTable);
+  validateTableName(logsTable);
   const [countResult] = await db.query(`SELECT COUNT(id) as total FROM ${convTable} ${queryWhere}`, queryParams);
   const total = countResult[0].total;
 
@@ -76,6 +78,7 @@ export const getConvidados = async (req, res) => {
 export const createConvidado = async (req, res) => {
   const { eventoId } = req.params;
   const { convTable } = getEventTablesList(eventoId);
+  validateTableName(convTable);
   const data = convidadoSchema.parse(req.body);
   const qrcode = `BACCH_${crypto.randomUUID().replace(/-/g, '').toUpperCase()}`;
   
@@ -91,6 +94,7 @@ export const createConvidado = async (req, res) => {
 export const createConvidadosMassa = async (req, res) => {
   const { eventoId } = req.params;
   const { convTable } = getEventTablesList(eventoId);
+  validateTableName(convTable);
   const data = convidadoMassaSchema.parse(req.body);
   
   if (!data.nomes || data.nomes.length === 0) return res.json({ success: true, totalInseridos: 0 });
@@ -115,6 +119,7 @@ export const createConvidadosMassa = async (req, res) => {
 export const updateConvidado = async (req, res) => {
   const { id, eventoId } = req.params;
   const { convTable } = getEventTablesList(eventoId);
+  validateTableName(convTable);
   const { nome, categoria, cpf, telefone, email, observacoes, tags } = req.body;
 
   const safeStringify = (val) => (typeof val === 'object' && val !== null) ? JSON.stringify(val) : val;
@@ -129,6 +134,8 @@ export const updateConvidado = async (req, res) => {
 export const deleteConvidado = async (req, res) => {
   const { id, eventoId } = req.params;
   const { convTable, logsTable } = getEventTablesList(eventoId);
+  validateTableName(convTable);
+  validateTableName(logsTable);
   const [[c]] = await db.query(`SELECT nome FROM ${convTable} WHERE id = ? AND evento_id = ?`, [id, eventoId]);
   if (!c) return res.status(404).json({ success: false, message: 'Convidado não encontrado neste evento' });
   

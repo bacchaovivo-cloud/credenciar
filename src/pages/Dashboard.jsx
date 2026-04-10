@@ -8,12 +8,14 @@ import { useApp } from '../context/AppContext';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import socket from '../services/socket';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../components/Toast';
 
 export default function Dashboard() {
   const [filtro, setFiltro] = useState('recentes');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { setEventoAtivo } = useApp();
+  const { toast, confirm } = useToast();
 
   const { data: eventosData, isError, isLoading } = useQuery({
     queryKey: ['eventos'],
@@ -89,14 +91,20 @@ export default function Dashboard() {
 
   const deletarEvento = async (id, nome, e) => {
     e.stopPropagation();
-    if (!window.confirm(`Tem certeza que deseja excluir o evento "${nome}" e todos os seus dados? Esta ação é irreversível.`)) return;
+    const ok = await confirm(`Tem certeza que deseja excluir o evento "${nome}" e todos os seus dados? Esta ação é irreversível.`, {
+      danger: true,
+      title: 'Excluir Evento',
+      confirmText: 'Excluir Permanentemente'
+    });
+    if (!ok) return;
     
     const res = await apiRequest(`eventos/${id}`, null, 'DELETE');
     if (res.success) {
+      toast.success('Evento excluído com sucesso!');
       queryClient.invalidateQueries(['eventos']);
       queryClient.invalidateQueries(['stats-consolidado']);
     } else {
-      alert('Erro ao excluir evento: ' + (res.message || 'Erro desconhecido'));
+      toast.error('Erro ao excluir evento: ' + (res.message || 'Erro desconhecido'));
     }
   };
 

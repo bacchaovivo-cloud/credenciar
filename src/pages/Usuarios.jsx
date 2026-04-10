@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiRequest } from '../services/api';
 import Menu from '../components/Menu';
+import { useToast } from '../components/Toast';
 
 export default function Usuarios() {
   const [users, setUsers] = useState([]);
@@ -22,7 +23,7 @@ export default function Usuarios() {
   });
   const [editModal, setEditModal] = useState({ ativo: false, usuario: null });
   const [setup2FA, setSetup2FA] = useState({ ativo: false, qrCode: '', secret: '', recoveryCodes: [], token: '' });
-  const [msg, setMsg] = useState({ texto: '', tipo: '' });
+  const { toast, confirm } = useToast();
 
   const PERMISSIONS_LIST = [
     { key: 'dashboard_view', label: 'Monitorar Faturamento', icon: 'bi-graph-up' },
@@ -47,11 +48,6 @@ export default function Usuarios() {
     if (resEventos.success) setEventos(resEventos.dados);
   };
 
-  const exibirAlerta = (texto, tipo) => {
-    setMsg({ texto, tipo });
-    setTimeout(() => setMsg({ texto: '', tipo: '' }), 4000);
-  };
-
   const start2FASetup = async () => {
     const res = await apiRequest('auth/2fa/generate', null, 'POST');
     if (res.success) {
@@ -73,19 +69,22 @@ export default function Usuarios() {
     }, 'POST');
 
     if (res.success) {
-        exibirAlerta("2FA Ativado com sucesso!", "sucesso");
+        toast.success("2FA Ativado com sucesso!");
         setSetup2FA({ ...setup2FA, ativo: false });
         carregarTudo();
     } else {
-        exibirAlerta(res.message || "Código inválido", "erro");
+        toast.error(res.message || "Código inválido");
     }
   };
 
   const disable2FA = async (userId) => {
-    if (window.confirm("Deseja desabilitar o 2FA para este usuário?")) {
+    const ok = await confirm("Deseja desabilitar o 2FA para este usuário?", {
+      title: 'Desabilitar 2FA'
+    });
+    if (ok) {
         const res = await apiRequest('auth/2fa/disable', null, 'POST'); 
         if (res.success) {
-            exibirAlerta("2FA Desabilitado!", "sucesso");
+            toast.success("2FA Desabilitado!");
             carregarTudo();
         }
     }
@@ -94,11 +93,11 @@ export default function Usuarios() {
   const cadastrarStaff = async (e) => {
     e.preventDefault();
     if (!novoUser.nome || !novoUser.usuario || !novoUser.senha) {
-      return exibirAlerta("Preencha todos os campos!", "erro");
+      return toast.error("Preencha todos os campos!");
     }
     const res = await apiRequest('usuarios', novoUser);
     if (res.success) {
-      exibirAlerta("Operador de elite cadastrado!", "sucesso");
+      toast.success("Operador de elite cadastrado!");
       setNovoUser({ 
         nome: '', usuario: '', senha: '', role: 'STAFF',
         permissoes: {
@@ -108,23 +107,28 @@ export default function Usuarios() {
       });
       carregarTudo();
     } else {
-      exibirAlerta("Erro ao cadastrar usuário.", "erro");
+      toast.error("Erro ao cadastrar usuário.");
     }
   };
 
   const vincularEvento = async (userId, evId) => {
     const res = await apiRequest(`usuarios/${userId}/atribuir`, { evento_id: evId || null }, 'PUT');
     if (res.success) {
-      exibirAlerta("Acesso do Staff atualizado!", "sucesso");
+      toast.success("Acesso do Staff atualizado!");
       carregarTudo();
     }
   };
 
   const apagarUsuario = async (id) => {
-    if (window.confirm("Deseja realmente remover este usuário?")) {
+    const ok = await confirm("Deseja realmente remover este usuário?", {
+      danger: true,
+      title: 'Remover Usuário',
+      confirmText: 'Remover'
+    });
+    if (ok) {
       const res = await apiRequest(`usuarios/${id}`, null, 'DELETE');
       if (res.success) {
-        exibirAlerta("Usuário removido!", "sucesso");
+        toast.success("Usuário removido!");
         carregarTudo();
       }
     }
@@ -138,7 +142,7 @@ export default function Usuarios() {
     
     const res = await apiRequest(`usuarios/${id}`, payload, 'PUT');
     if (res.success) {
-      exibirAlerta("Permissões atualizadas!", "sucesso");
+      toast.success("Permissões atualizadas!");
       setEditModal({ ativo: false, usuario: null });
       carregarTudo();
     }
@@ -155,12 +159,6 @@ export default function Usuarios() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 font-sans flex flex-col">
       <Menu />
-      
-      {msg.texto && (
-        <div className={`fixed top-24 right-5 p-4 rounded-xl text-white font-bold z-[1000] shadow-xl transition-all animate-in fade-in slide-in-from-top-4 ${msg.tipo === 'sucesso' ? 'bg-emerald-500' : 'bg-red-500'}`}>
-          {msg.texto}
-        </div>
-      )}
 
       <div className="pt-20 p-4 md:p-8 w-full max-w-7xl mx-auto flex-1">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-8 tracking-tight">Gestão de Equipe (Staff)</h1>

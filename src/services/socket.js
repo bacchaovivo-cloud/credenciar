@@ -11,9 +11,12 @@ class SocketService {
   connect() {
     if (this.socket) return;
 
+    const token = localStorage.getItem('userToken');
+
     this.socket = io(SOCKET_URL, {
       transports: ['websocket'],
-      reconnectionAttempts: 5
+      reconnectionAttempts: 5,
+      auth: { token }
     });
 
     this.socket.on('checkin', (data) => {
@@ -21,7 +24,8 @@ class SocketService {
     });
     
     this.socket.on('checkin_sucesso', (data) => {
-      this.trigger('checkin', data); // Unifica em 'checkin' para o frontend
+      this.trigger('checkin_sucesso', data);
+      this.trigger('checkin', data); // Alias unificado
     });
 
     this.socket.on('vip_arrival', (data) => {
@@ -30,6 +34,14 @@ class SocketService {
 
     this.socket.on('stats_update', (data) => {
       this.trigger('stats_update', data);
+    });
+
+    this.socket.on('queue_update', (data) => {
+      this.trigger('queue_update', data);
+    });
+
+    this.socket.on('hardware_alert', (data) => {
+      this.trigger('hardware_alert', data);
     });
 
     this.socket.on('anomaly_alert', (data) => {

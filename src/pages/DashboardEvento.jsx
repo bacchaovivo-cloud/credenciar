@@ -8,9 +8,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import TotemConfigModal from '../components/TotemConfigModal';
-import { WarRoomPanel } from '../components/WarRoomPanel';
 import { LineChart, Line } from 'recharts';
+import { PredictiveService } from '../services/predictiveService';
+import { useToast } from '../components/Toast';
 
 
 
@@ -23,6 +23,7 @@ export default function DashboardEvento() {
   const [vipAlert, setVipAlert] = useState(null);
   const [comparativoAtivo, setComparativoAtivo] = useState(true);
   const userPermissions = JSON.parse(localStorage.getItem('userPermissions') || '{}');
+  const { toast } = useToast();
   const { data: eventoData } = useQuery({
     queryKey: ['evento', eventoId],
     queryFn: async () => {
@@ -131,14 +132,14 @@ export default function DashboardEvento() {
       localStorage.setItem(`printer_ip_${eventoId}`, printerConfig.printer_ip);
       localStorage.setItem(`printer_port_${eventoId}`, printerConfig.printer_port);
       localStorage.setItem(`station_name_${eventoId}`, printerConfig.station_name);
-      alert('✅ Configuração desta estação salva localmente!');
+      toast.success('Configuração desta estação salva localmente!');
     } else {
       const res = await apiRequest(`eventos/${eventoId}`, {
         ...eventoData,
         printer_ip: printerConfig.printer_ip,
         printer_port: printerConfig.printer_port
       }, 'PUT');
-      if (res.success) alert('🌍 Configuração padrão do evento atualizada!');
+      if (res.success) toast.success('Configuração padrão do evento atualizada!');
     }
   };
 
@@ -149,10 +150,10 @@ export default function DashboardEvento() {
         printer_ip: printerConfig.printer_ip,
         printer_port: printerConfig.printer_port
       });
-      if (res.success) alert('✅ Conexão estabelecida! A impressora respondeu.');
-      else alert(res.message || '❌ Erro ao conectar com a impressora.');
+      if (res.success) toast.success('Conexão estabelecida! A impressora respondeu.');
+      else toast.error(res.message || 'Erro ao conectar com a impressora.');
     } catch (err) {
-      alert('❌ Falha crítica de rede ou servidor.');
+      toast.error('Falha crítica de rede ou servidor.');
     } finally {
       setTesting(false);
     }
@@ -389,26 +390,26 @@ export default function DashboardEvento() {
                       ))}
                     </div>
                   </div>
-                  <span className="text-[10px] font-black text-sky-500 uppercase tracking-[0.2em]">Densidade de Fluxo (Últimas 24h)</span>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="w-2 h-2 rounded-sm" style={{ opacity: i * 0.2, backgroundColor: '#0ea5e9' }}></div>)}
-                  </div>
+                  <span className="text-[10px] font-black text-sky-500 uppercase tracking-[0.2em] mb-2 block">Densidade de Inteligência (24h)</span>
                   <div className="flex gap-1 h-3 w-full">
-                    {Array.from({ length: 24 }).map((_, i) => {
-                      const hourData = stats.grafico?.find(g => parseInt(g.hora) === i);
-                      const intensity = hourData ? Math.min(hourData.qtd / 50, 1) : 0;
-                      return (
-                        <div
-                          key={i}
-                          className="flex-1 rounded-sm transition-all duration-500 hover:scale-y-150 cursor-pointer"
-                          style={{
-                            backgroundColor: intensity > 0 ? '#0ea5e9' : '#1e293b',
-                            opacity: intensity > 0 ? 0.2 + (intensity * 0.8) : 0.3
-                          }}
-                          title={`${i}h: ${hourData?.qtd || 0} check-ins`}
-                        ></div>
-                      );
-                    })}
+                    {(() => {
+                      const heatmap = PredictiveService.gerarHeatmap(stats.grafico);
+                      return Array.from({ length: 24 }).map((_, i) => {
+                        const hourData = heatmap?.find(g => parseInt(g.hora) === i);
+                        const intensity = hourData ? hourData.intensity : 0;
+                        return (
+                          <div
+                            key={i}
+                            className="flex-1 rounded-sm transition-all duration-500 hover:scale-y-150 cursor-pointer"
+                            style={{
+                              backgroundColor: intensity > 0 ? 'var(--p-color)' : '#1e293b',
+                              opacity: intensity > 0 ? 0.2 + (intensity * 0.8) : 0.3
+                            }}
+                            title={`${i}h: ${hourData?.qtd || 0} check-ins (Intensidade: ${Math.round(intensity * 100)}%)`}
+                          ></div>
+                        );
+                      });
+                    })()}
                   </div>
                   <div className="flex justify-between mt-2">
                     <span className="text-[8px] font-bold text-slate-600 uppercase">00h</span>
@@ -511,14 +512,17 @@ export default function DashboardEvento() {
                   <div className="text-center">
                     <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Estimativa de Lotação Total</span>
                     <div className="flex items-baseline gap-2">
-                      {stats.previsaoLotacao ? (
-                        <>
-                          <span className="text-4xl font-black text-emerald-500">~ {stats.previsaoLotacao}</span>
-                          <span className="text-xs font-bold text-emerald-500/70 uppercase tracking-tighter">minutos restantes</span>
-                        </>
-                      ) : (
-                        <span className="text-xl font-bold text-slate-600 italic">Calculando fluxo...</span>
-                      )}
+                      {(() => {
+                        const eta = PredictiveService.calcularETA(stats.total, stats.presentes, stats.grafico);
+                        if (eta === null) return <span className="text-xl font-bold text-slate-600 italic">Calculando fluxo...</span>;
+                        if (eta === 0) return <span className="text-4xl font-black text-emerald-500 uppercase">Lotado</span>;
+                        return (
+                          <>
+                            <span className="text-4xl font-black text-emerald-500">~ {eta}</span>
+                            <span className="text-xs font-bold text-emerald-500/70 uppercase tracking-tighter">minutos restantes</span>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

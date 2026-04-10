@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, keepPreviousData, useQueryClient } from '@tanstack/react-query';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { jsPDF } from "jspdf";
-import { io } from 'socket.io-client';
+import socket from '../services/socket';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QRCodeLib from 'qrcode';
 import confetti from 'canvas-confetti';
@@ -30,9 +30,15 @@ import { useApp } from '../context/AppContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useCheckinFlow } from '../hooks/useCheckinFlow';
 import { compareFaces } from '../services/faceID';
-import FaceScanner from '../components/FaceScanner';
+import { useToast } from '../components/Toast';
+import { useGuestData } from '../hooks/useGuestData';
+import { useSocketAlerts } from '../hooks/useSocketAlerts';
+import { useGuestActions } from '../hooks/useGuestActions';
+import React, { Suspense } from 'react';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const FaceScanner = React.lazy(() => import('../components/FaceScanner'));
+
+
 
 export default function Convidados() {
   const { 
@@ -47,6 +53,7 @@ export default function Convidados() {
   const queryEvento = new URLSearchParams(location.search).get('evento');
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { toast, confirm } = useToast();
 
   // --- ESTADOS PRINCIPAIS ---
   const isOnline = useOnlineStatus();
@@ -79,7 +86,6 @@ export default function Convidados() {
   const [modoBiometria, setModoBiometria] = useState(false);
   const [modoEvento, setModoEvento] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   // --- MÉTRICAS & OPERAÇÃO ---
   const [latency, setLatency] = useState(0);
@@ -129,57 +135,23 @@ export default function Convidados() {
   const searchInputRef = useRef(null);
   const focusIntervalRef = useRef(null);
   const timerRef = useRef(null);
-  const socketRef = useRef(null);
 
   const POR_PAGINA = 50;
   const safeRole = (role || '').trim().toUpperCase();
 
-  // --- SOCKET.IO SETUP ---
-  useEffect(() => {
-    if (!eventoAtivo) return;
+  // --- CUSTOM HOOKS ---
+  const { convidados, isLoading, paginacaoServidor, diasEvento, eventoInfo } = useGuestData({
+    eventoAtivo,
+    isOnline,
+    pagina,
+    debouncedBusca,
+    filtroCategoria,
+    isFuzzyMode,
+    POR_PAGINA,
+  });
 
-    socketRef.current = io(SOCKET_URL, {
-      auth: {
-        token: localStorage.getItem('userToken')
-      }
-    });
-
-    socketRef.current.on('connect', () => {
-       console.log('📡 Connected to WebSocket');
-    });
-
-    socketRef.current.on('checkin_sucesso', (data) => {
-      if (parseInt(data.evento_id) === parseInt(eventoAtivo)) {
-        // Invalida a query para atualizar a lista
-        queryClient.invalidateQueries(['convidados', eventoAtivo]);
-        // Atualiza estatísticas (poderia vir pelo socket também)
-        fetchStats();
-      }
-    });
-
-    // Listener para métricas de ocupação em tempo real (Push do backend)
-    socketRef.current.on('stats_update', (data) => {
-      if (parseInt(data.evento_id) === parseInt(eventoAtivo)) {
-        setEventStats(data.stats);
-      }
-    });
-
-    // Listener para status da fila de impressao (Push do backend)
-    socketRef.current.on('queue_update', (data) => {
-      if (parseInt(data.evento_id) === parseInt(eventoAtivo)) {
-        setQueueStatus(data);
-        setAiMetrics({
-          velocity: data.taxa_por_minuto || '0.0',
-          eta: Math.ceil(data.tempo_estimado_segundos / 60) + 'm',
-          risk: data.is_gargalo ? 'HIGH' : 'LOW'
-        });
-      }
-    });
-
-    return () => {
-      if (socketRef.current) socketRef.current.disconnect();
-    };
-  }, [eventoAtivo, queryClient]);
+  useSocketAlerts(eventoAtivo, setEventStats, setQueueStatus, setAiMetrics);
+  const { isBulkProcessing, deletarConvidado, desfazerCheckin, executarAcaoEmMassa } = useGuestActions(eventoAtivo, selectedIds, setSelectedIds, convidados);
 
   // --- ZENITH BIO-CORE: RECONHECIMENTO FACIAL ---
   const handleFaceDetected = async (descriptor, snapshot) => {
@@ -209,18 +181,7 @@ export default function Convidados() {
     }
   }, [role]);
 
-  // Polling de Fila e Saúde (Opcional, agora temos WebSockets)
-  useEffect(() => {
-    if (!eventoAtivo || !isOnline) return;
-    const interval = setInterval(async () => {
-      const start = Date.now();
-      // Apenas pingamos a API para medir latência, os dados agora vêm via socket
-      const res = await apiRequest(`impressao/status-fila/${eventoAtivo}`);
-      setLatency(Date.now() - start);
-      // setQueueStatus(res); // REMOVIDO: Agora o socket cuida disso
-    }, 10000); // Latency check can be slower
-    return () => clearInterval(interval);
-  }, [eventoAtivo, isOnline]);
+
 
   const fetchStats = async () => {
     if (!eventoAtivo || !isOnline) return;
@@ -263,81 +224,6 @@ export default function Convidados() {
     return () => window.removeEventListener('keydown', handleShortcuts);
   }, [eventoAtivo]);
 
-  // --- QUERY DE CONVIDADOS (COM DEBOUNCE) ---
-  const { data: qData, isLoading } = useQuery({
-    queryKey: ['convidados', eventoAtivo, pagina, debouncedBusca, filtroCategoria],
-    queryFn: async () => {
-      if (!isOnline) {
-        const local = JSON.parse(localStorage.getItem(`bacch_convidados_${eventoAtivo}`) || '[]');
-        return { dados: local, paginacao: { total: local.length, paginaAtual: 1, totalPaginas: 1 } };
-      }
-      const params = new URLSearchParams({ page: pagina, limit: POR_PAGINA, busca: debouncedBusca, categoria: filtroCategoria });
-      const res = await apiRequest(`convidados/${eventoAtivo}?${params}`);
-      if (res.success) localStorage.setItem(`bacch_convidados_${eventoAtivo}`, JSON.stringify(res.dados));
-      return res;
-    },
-    enabled: !!eventoAtivo,
-    placeholderData: keepPreviousData,
-  });
-
-  const rawConvidados = qData?.dados || [];
-  const paginacaoServidor = qData?.paginacao || { total: 0, totalPaginas: 1, paginaAtual: 1 };
-
-  // --- QUERY DE EVENTO ATIVO (DATAS) ---
-  const { data: eventoInfo } = useQuery({
-    queryKey: ['evento_detalhes', eventoAtivo],
-    queryFn: async () => {
-      if (!isOnline || !eventoAtivo) return null;
-      const res = await apiRequest(`eventos/${eventoAtivo}`);
-      return res.success ? res.dados : null;
-    },
-    enabled: !!eventoAtivo,
-    staleTime: 600000 // 10 min
-  });
-
-  const diasEvento = useMemo(() => {
-    if (!eventoInfo?.data_inicio || !eventoInfo?.data_fim) return null;
-    
-    const parseYYYYMMDD = (dateStr) => {
-        const val = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
-        const [y, m, d] = val.split('-');
-        return new Date(y, m - 1, d);
-    };
-
-    const start = parseYYYYMMDD(eventoInfo.data_inicio);
-    const end = parseYYYYMMDD(eventoInfo.data_fim);
-    
-    if (isNaN(start) || isNaN(end) || start > end) return null;
-    
-    const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-    const maxDays = Math.min(diff, 30);
-    const dias = [];
-    
-    for (let i = 0; i < maxDays; i++) {
-        const date = new Date(start);
-        date.setDate(date.getDate() + i);
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        dias.push(`${y}-${m}-${d}`);
-    }
-    return dias;
-  }, [eventoInfo]);
-
-  // --- SMART SEARCH (FUSE.JS) ---
-  const convidados = useMemo(() => {
-    if (!busca || !isFuzzyMode || rawConvidados.length === 0) return rawConvidados;
-    // Se a busca for um CPF (só números), o backend já é eficiente o suficiente, mas o fuzzy ajuda em nomes
-    const fuse = new Fuse(rawConvidados, {
-      keys: ['nome', 'cpf', 'email'],
-      threshold: 0.4, // Equilíbrio entre precisão e tolerância
-      distance: 100,
-      includeScore: true
-    });
-    const results = fuse.search(busca);
-    return results.map(r => r.item);
-  }, [rawConvidados, busca, isFuzzyMode]);
-
   useEffect(() => {
     if (eventoAtivo) carregarSetores();
     else setSetoresEvento([]);
@@ -377,8 +263,8 @@ export default function Convidados() {
   };
 
   const exibirAlerta = (texto, tipo) => {
-    setMsg({ texto, tipo });
-    setTimeout(() => setMsg({ texto: '', tipo: '' }), 4000);
+    const toastType = tipo === 'sucesso' ? 'success' : tipo === 'erro' ? 'error' : 'info';
+    toast(texto, { type: toastType });
   };
 
   const syncOfflineCheckins = async () => {
@@ -390,72 +276,7 @@ export default function Convidados() {
     }
   };
 
-  const deletarConvidado = async (id, nome) => {
-    if (!window.confirm(`Deletar ${nome}?`)) return;
-    const res = await apiRequest(`convidados/${eventoAtivo}/${id}`, null, 'DELETE');
-    if (res.success) { exibirAlerta('Removido!', 'sucesso'); queryClient.invalidateQueries(['convidados', eventoAtivo]); }
-  };
 
-  const desfazerCheckin = async (id, nome, data_ponto = null) => {
-    const msg = data_ponto 
-      ? `Desfazer check-in de ${nome} no dia ${data_ponto}?` 
-      : `Desfazer TODOS os check-ins de ${nome}?`;
-      
-    if (!window.confirm(msg)) return;
-    
-    const url = `convidados/${eventoAtivo}/checkin/desfazer/${id}${data_ponto ? `?data_ponto=${data_ponto}` : ''}`;
-    const res = await apiRequest(url, {}, 'PUT');
-    
-    if (res.success) {
-      exibirAlerta(`Revertido!`, 'sucesso');
-      // Refetch imediato e repetido para garantir sincronia
-      queryClient.invalidateQueries(['convidados', eventoAtivo]);
-      setTimeout(() => queryClient.invalidateQueries(['convidados', eventoAtivo]), 300);
-      setTimeout(() => queryClient.invalidateQueries(['convidados', eventoAtivo]), 1000);
-    }
-  };
-
-  const executarAcaoEmMassa = async (acao) => {
-    if (selectedIds.length === 0) return;
-    
-    const confirmMsg = acao === 'checkin' 
-      ? `Deseja realizar check-in de ${selectedIds.length} convidados selecionados no dia de hoje?` 
-      : `Deseja EXCLUIR permanentEMENTE ${selectedIds.length} convidados? Esta ação não pode ser desfeita.`;
-      
-    if (!window.confirm(confirmMsg)) return;
-
-    setIsBulkProcessing(true);
-    try {
-      if (acao === 'checkin') {
-        const dataHoje = new Date().toISOString().split('T')[0];
-        // Processa sequencialmente para evitar sobrecarga de DB ou triggers
-        for (const id of selectedIds) {
-          // Busca convidado na lista atual
-          const c = convidados.find(conv => conv.id === id);
-          if (c) {
-            await apiRequest(`checkin`, { 
-              qrcode: c.qrcode, 
-              evento_id: eventoAtivo,
-              data_ponto: dataHoje,
-              station_id: 'BULK_ACTION'
-            });
-          }
-        }
-        exibirAlerta(`${selectedIds.length} check-ins realizados!`, 'sucesso');
-      } else if (acao === 'delete') {
-        for (const id of selectedIds) {
-          await apiRequest(`convidados/${eventoAtivo}/${id}`, {}, 'DELETE');
-        }
-        exibirAlerta(`${selectedIds.length} convidados removidos!`, 'sucesso');
-      }
-      setSelectedIds([]);
-      queryClient.invalidateQueries(['convidados', eventoAtivo]);
-    } catch (err) {
-      exibirAlerta('Erro ao processar ação em massa.', 'erro');
-    } finally {
-      setIsBulkProcessing(false);
-    }
-  };
 
   const abrirModalQR = async (nome, qrcode) => {
     try {
@@ -645,7 +466,9 @@ export default function Convidados() {
 
                     <div className="relative group bg-slate-100 dark:bg-slate-800 rounded-[4rem] overflow-hidden border-4 border-slate-200 dark:border-slate-700 p-6 min-h-[400px] flex items-center justify-center">
                         {modoBiometria ? (
-                            <FaceScanner onScan={handleFaceDetected} />
+                            <Suspense fallback={<div className="flex flex-col items-center gap-4"><div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div><span className="text-sky-500 font-bold uppercase tracking-widest text-xs">Carregando IA Facial...</span></div>}>
+                                <FaceScanner onScan={handleFaceDetected} />
+                            </Suspense>
                         ) : (
                             <div className="w-full max-w-md">
                                 <Scanner onScan={(res) => res && res[0]?.rawValue && fazerCheckin(res[0].rawValue)} />
@@ -757,9 +580,6 @@ export default function Convidados() {
                     }}
                     onCheckin={async (code, meta) => {
                        await fazerCheckin(code, meta);
-                       // Refetch agressivo: garante que qualquer delay de cache seja mitigado
-                       setTimeout(() => queryClient.invalidateQueries(['convidados', eventoAtivo]), 100);
-                       setTimeout(() => queryClient.invalidateQueries(['convidados', eventoAtivo]), 500);
                      }}
                   />
                 )}

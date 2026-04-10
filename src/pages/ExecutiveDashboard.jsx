@@ -9,6 +9,7 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 import ZenithHeatmap from '../components/ZenithHeatmap';
 import HealthMonitor from '../components/HealthMonitor';
 import ZenithMap from '../components/ZenithMap';
+import { useToast } from '../components/Toast';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -19,6 +20,7 @@ export default function ExecutiveDashboard() {
   const [vipAlerts, setVipAlerts] = useState([]);
   const [isExporting, setIsExporting] = useState(false);
   const socketRef = useRef(null);
+  const { toast } = useToast();
   
   const handleDownload = async (type, eventoId) => {
     try {
@@ -39,7 +41,7 @@ export default function ExecutiveDashboard() {
         link.remove();
         window.URL.revokeObjectURL(url);
     } catch (e) {
-        alert('Erro ao gerar relatório: ' + e.message);
+        toast.error('Erro ao gerar relatório: ' + e.message);
     } finally {
         setIsExporting(false);
     }

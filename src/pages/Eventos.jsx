@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiRequest } from '../services/api';
 import Menu from '../components/Menu';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../components/Toast';
 
 const TIPOS_EVENTO = ['Congresso', 'Seminário', 'Treinamento', 'Conferência', 'Workshop', 'Palestra', 'Festival', 'Show', 'Corporativo', 'Outro'];
 
@@ -46,6 +47,7 @@ export default function Eventos() {
   const [msg, setMsg] = useState('');
   const [editando, setEditando] = useState(null);
   const navigate = useNavigate();
+  const { toast, confirm } = useToast();
 
   useEffect(() => { carregarEventos(); }, []);
 
@@ -93,9 +95,8 @@ export default function Eventos() {
       setForm({ nome: '', data_evento: '', local: '', cor_primaria: '#0ea5e9', tipo_evento: 'Congresso', descricao: '', capacidade_total: '', whatsapp_enabled: false, whatsapp_template: '' });
       setSetores(SETORES_PRESET['Congresso']);
       setShowModal(false);
-      setMsg('✅ Evento criado com sucesso!');
+      toast.success('Evento criado com sucesso!');
       carregarEventos();
-      setTimeout(() => setMsg(''), 3000);
     }
   };
 
@@ -120,17 +121,21 @@ export default function Eventos() {
     e.preventDefault();
     const res = await apiRequest(`eventos/${editando.id}`, { ...form }, 'PUT');
     if (res.success) {
-      setMsg('✅ Evento atualizado!');
+      toast.success('Evento atualizado!');
       setEditando(null);
       carregarEventos();
-      setTimeout(() => setMsg(''), 3000);
     }
   };
 
   const apagarEvento = async (id) => {
-    if (!window.confirm('Excluir este evento e TODOS os participantes? Esta ação é irreversível.')) return;
+    const ok = await confirm('Excluir este evento e TODOS os participantes? Esta ação é irreversível.', {
+      danger: true,
+      title: 'Excluir Evento',
+      confirmText: 'Excluir Permanentemente'
+    });
+    if (!ok) return;
     const res = await apiRequest(`eventos/${id}`, null, 'DELETE');
-    if (res.success) { setMsg('🗑️ Evento excluído.'); carregarEventos(); setTimeout(() => setMsg(''), 3000); }
+    if (res.success) { toast.success('Evento excluído.'); carregarEventos(); }
   };
 
   const inputCls = "w-full mt-1 p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none text-sm";
@@ -373,10 +378,6 @@ export default function Eventos() {
             <i className="bi bi-plus-lg text-lg"></i> Novo Evento
           </button>
         </div>
-
-        {msg && (
-          <div className="mb-6 p-4 bg-emerald-500 text-white font-bold rounded-xl text-center">{msg}</div>
-        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {eventos.length === 0 ? (

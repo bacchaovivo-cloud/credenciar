@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../services/api';
+import { useToast } from './Toast';
 
 export default function TotemConfigModal({ isOpen, onClose, evento, onUpdate }) {
   const [config, setConfig] = useState({
@@ -15,6 +16,7 @@ export default function TotemConfigModal({ isOpen, onClose, evento, onUpdate }) 
 
   const [corPrimaria, setCorPrimaria] = useState('#0ea5e9');
   const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (evento) {
@@ -38,12 +40,12 @@ export default function TotemConfigModal({ isOpen, onClose, evento, onUpdate }) 
       }, 'PUT');
 
       if (res.success) {
-        alert('✅ Configurações do Totem salvas!');
+        toast.success('Configurações do Totem salvas!');
         onUpdate();
         onClose();
       }
     } catch (e) {
-      alert('❌ Erro ao salvar configurações');
+      toast.error('Erro ao salvar configurações');
     } finally {
       setSaving(false);
     }
@@ -74,11 +76,11 @@ export default function TotemConfigModal({ isOpen, onClose, evento, onUpdate }) 
       
       const res = await response.json();
       if (res.success) {
-        alert(`✅ ${type === 'logo' ? 'Logo' : 'Background'} atualizado com sucesso!`);
+        toast.success(`${type === 'logo' ? 'Logo' : 'Background'} atualizado com sucesso!`);
         onUpdate();
       }
     } catch (err) {
-      alert('❌ Erro no upload do arquivo');
+      toast.error('Erro no upload do arquivo');
     }
   };
 

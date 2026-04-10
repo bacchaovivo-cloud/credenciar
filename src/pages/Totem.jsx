@@ -3,8 +3,10 @@ import { useParams } from 'react-router-dom';
 import { apiRequest } from '../services/api';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import confetti from 'canvas-confetti';
-import FaceScanner from '../components/FaceScanner';
 import { syncEventData } from '../services/syncService';
+import { Suspense, lazy } from 'react';
+
+const FaceScanner = lazy(() => import('../components/FaceScanner'));
 
 const STATIC_STATION_ID = localStorage.getItem('zenith_station_id') || `TOTEM_${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 if (!localStorage.getItem('zenith_station_id')) localStorage.setItem('zenith_station_id', STATIC_STATION_ID);
@@ -50,7 +52,7 @@ export default function Totem() {
   }, [eventoId, eventoAtivo]);
 
   const iniciarTotem = () => {
-    if (!eventoAtivo) return alert("Selecione um evento!");
+    if (!eventoAtivo) return toast.error("Selecione um evento!");
     localStorage.setItem('totem_evento', eventoAtivo);
     syncEventData(eventoAtivo);
     setModoAtivo(true);
@@ -223,7 +225,9 @@ export default function Totem() {
        {/* SCANNER FACE */}
        {metodo === 'face' && telaAtiva.tipo === 'neutro' && (
            <div className="absolute inset-0 z-0 opacity-50 transition-opacity duration-1000">
-                <FaceScanner onScan={processarFaceCheckin} />
+               <Suspense fallback={<div className="flex flex-col items-center justify-center w-full h-full"><div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mb-4"></div><span className="text-white font-bold uppercase">Carregando IA...</span></div>}>
+                 <FaceScanner onScan={processarFaceCheckin} />
+               </Suspense>
            </div>
        )}
 
