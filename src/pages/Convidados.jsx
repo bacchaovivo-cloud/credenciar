@@ -499,7 +499,7 @@ export default function Convidados() {
                <button onClick={() => setIsModoEvento(false)} className="px-8 py-4 bg-red-50 text-red-600 rounded-3xl font-black">SAIR DO MODO EVENTO</button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
+            <div className="flex flex-col gap-2">
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col sm:flex-row gap-3">
                  <div className="relative flex-1 group">

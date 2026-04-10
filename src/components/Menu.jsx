@@ -172,7 +172,7 @@ export default function Menu() {
   const role = localStorage.getItem('userRole')?.trim().toUpperCase();
 
   return (
-    <nav className="glass-effect fixed top-0 left-0 right-0 z-50 px-4 md:px-6 py-3 flex justify-between items-center text-slate-900 dark:text-white min-h-[72px]">
+    <nav className="glass-effect relative top-0 left-0 right-0 z-50 px-4 md:px-6 py-3 flex justify-between items-center text-slate-900 dark:text-white min-h-[72px]">
       
       {/* MOBILE DRAWER OVERLAY */}
       <AnimatePresence>

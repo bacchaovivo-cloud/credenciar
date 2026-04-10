@@ -1,0 +1,325 @@
+﻿
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\DashboardComponents.jsx
+  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\FaceRegistrationModal.jsx
+  23:16  error  'err' is defined but never used  no-unused-vars
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\GuestTable.jsx
+   14:3   error  'eventoAtivo' is defined but never used                                                       no-unused-vars
+  206:21  error  'enteredToday' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\HealthMonitor.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\Menu.jsx
+   5:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      no-unused-vars
+  32:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  30 |
+  31 |   useEffect(() => {
+> 32 |     carregarLiveStats();
+     |     ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  33 |     
+  34 |     // Configura├º├úo do Socket para Real-time
+  35 |     socket.connect();  react-hooks/set-state-in-effect
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\PageTransitions.jsx
+  1:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\QRScannerListener.jsx
+  11:30  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+   9 | const QRScannerListener = ({ onScan, delay = 50, suffix = 'Enter' }) => {
+  10 |   const buffer = useRef('');
+> 11 |   const lastKeyTime = useRef(Date.now());
+     |                              ^^^^^^^^^^ Cannot call impure function
+  12 |
+  13 |   useEffect(() => {
+  14 |     const handleKeyDown = (e) => {  react-hooks/purity
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\SkeletonLoader.jsx
+   1:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    no-unused-vars
+  31:88  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  29 |         <div className="flex items-end justify-between h-32 gap-4">
+  30 |           {[1, 2, 3, 4, 5, 6].map((i) => (
+> 31 |             <Skeleton key={i} className="flex-1 rounded-t-lg" style={{ height: `${20 + Math.random() * 80}%` }} />
+     |                                                                                        ^^^^^^^^^^^^^ Cannot call impure function
+  32 |           ))}
+  33 |         </div>
+  34 |       </div>  react-hooks/purity
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\SmartImporterModal.jsx
+   1:27  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+   3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u         no-unused-vars
+   6:10  error  'file' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  39:29  error  'idx' is defined but never used                                                       no-unused-vars
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\TotemConfigModal.jsx
+  45:14  error  'e' is defined but never used    no-unused-vars
+  80:14  error  'err' is defined but never used  no-unused-vars
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\WarRoomPanel.jsx
+   1:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  14:39  error  'React' is not defined                                                         no-undef
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\ZenithHeatmap.jsx
+   2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          no-unused-vars
+  23:76  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  21 |     return gates.map(gate => {
+  22 |       // Simula intensidade baseada em dados reais ou aleat├│rios se n├úo houver dados espec├¡ficos por esta├º├úo
+> 23 |       const intensity = (data?.find(d => d.station === gate.name)?.taxa || Math.random() * 20);
+     |                                                                            ^^^^^^^^^^^^^ Cannot call impure function
+  24 |       return { ...gate, intensity };
+  25 |     });
+  26 |   }, [gates, data]);  react-hooks/purity
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\components\ZenithMap.jsx
+  1:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\pages\AuditLogs.jsx
+  12:5  error  Error: Cannot access variable before it is declared
+
+`carregarLogs` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  10 |
+  11 |   useEffect(() => {
+> 12 |     carregarLogs();
+     |     ^^^^^^^^^^^^ `carregarLogs` accessed before it is declared
+  13 |   }, []);
+  14 |
+  15 |   const carregarLogs = async () => {
+
+  13 |   }, []);
+  14 |
+> 15 |   const carregarLogs = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 16 |     setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 17 |     const res = await apiRequest('stats/logs-forenses'); // Endpoint Zenith
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 18 |     if (res.success) {
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 19 |       setLogs(res.dados);
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 20 |     }
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 21 |     setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 22 |   };
+     | ^^^^^ `carregarLogs` is declared here
+  23 |
+  24 |   const exibirAlerta = (texto, tipo) => {
+  25 |     setMsg({ texto, tipo });  react-hooks/immutability
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\pages\Comprar.jsx
+  33:14  error  'err' is defined but never used  no-unused-vars
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\pages\Convidados.jsx
+    8:8   error  'confetti' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                      no-unused-vars
+   10:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                        no-unused-vars
+   28:10  error  'normalizar' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+   42:20  error  'updatePrinter' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+   80:22  error  'setModoEvento' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+  132:9   error  'timerRef' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+  219:13  error  'res' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                  no-unused-vars
+  385:9   error  'syncOfflineCheckins' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  466:14  error  'err' is defined but never used                                                                      no-unused-vars
+  499:27  error  'qrcode' is defined but never used                                                                   no-unused-vars
+  499:35  error  'cat' is defined but never used                                                                      no-unused-vars
+  731:38  error  'userPermissions' is not defined                                                                     no-undef
+  799:29  error  'userPermissions' is not defined                                                                     no-undef
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\pages\Dashboard.jsx
+  10:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\pages\DashboardEvento.jsx
+  8:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\pages\Eventos.jsx
+  50:21  error  Error: Cannot access variable before it is declared
+
+`carregarEventos` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  48 |   const navigate = useNavigate();
+  49 |
+> 50 |   useEffect(() => { carregarEventos(); }, []);
+     |                     ^^^^^^^^^^^^^^^ `carregarEventos` accessed before it is declared
+  51 |
+  52 |   const carregarEventos = async () => {
+  53 |     const res = await apiRequest('eventos');
+
+  50 |   useEffect(() => { carregarEventos(); }, []);
+  51 |
+> 52 |   const carregarEventos = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 53 |     const res = await apiRequest('eventos');
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 54 |     if (res.success) setEventos(res.dados);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 55 |   };
+     | ^^^^^ `carregarEventos` is declared here
+  56 |
+  57 |   const handleTipoChange = (tipo) => {
+  58 |     setForm({ ...form, tipo_evento: tipo });  react-hooks/immutability
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\pages\ExecutiveDashboard.jsx
+   6:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                no-unused-vars
+  20:10  error  'isExporting' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  98:34  error  'i' is defined but never used                                                                no-unused-vars
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\pages\LabelDesigner.jsx
+   5:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
+  36:5   error  Error: Cannot access variable before it is declared
+
+`carregarConfig` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  34 |
+  35 |   useEffect(() => {
+> 36 |     carregarConfig();
+     |     ^^^^^^^^^^^^^^ `carregarConfig` accessed before it is declared
+  37 |   }, [eventoId]);
+  38 |
+  39 |   const carregarConfig = async () => {
+
+  37 |   }, [eventoId]);
+  38 |
+> 39 |   const carregarConfig = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 40 |     setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 41 |     const res = await apiRequest(`eventos/${eventoId}/label-config`);
+     ÔÇª
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 55 |     setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 56 |   };
+     | ^^^^^ `carregarConfig` is declared here
+  57 |
+  58 |   const salvar = async () => {
+  59 |     // Sort array by Y ascending before saving so printer prints top to bottom correctly  react-hooks/immutability
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\pages\Logs.jsx
+  11:5  error  Error: Cannot access variable before it is declared
+
+`carregarLogs` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+   9 |
+  10 |   useEffect(() => {
+> 11 |     carregarLogs();
+     |     ^^^^^^^^^^^^ `carregarLogs` accessed before it is declared
+  12 |   }, []);
+  13 |
+  14 |   const carregarLogs = async () => {
+
+  12 |   }, []);
+  13 |
+> 14 |   const carregarLogs = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 15 |     setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 16 |     const res = await apiRequest('stats/admin/audit-logs');
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 17 |     if (res.success) setLogs(res.dados);
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 18 |     setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 19 |   };
+     | ^^^^^ `carregarLogs` is declared here
+  20 |
+  21 |   const logsFiltrados = logs.filter(l => 
+  22 |     l.acao.toLowerCase().includes(busca.toLowerCase()) ||   react-hooks/immutability
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\pages\Totem.jsx
+  64:14  error  'e' is defined but never used  no-unused-vars
+  64:17  error  Empty block statement          no-empty
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\pages\Usuarios.jsx
+   38:5   error  Error: Cannot access variable before it is declared
+
+`carregarTudo` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  36 |
+  37 |   useEffect(() => {
+> 38 |     carregarTudo();
+     |     ^^^^^^^^^^^^ `carregarTudo` accessed before it is declared
+  39 |     const interval = setInterval(carregarTudo, 15000); // Polling para atualizar performance
+  40 |     return () => clearInterval(interval);
+  41 |   }, []);
+
+  41 |   }, []);
+  42 |
+> 43 |   const carregarTudo = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 44 |     const resUsers = await apiRequest('usuarios');
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 45 |     const resEventos = await apiRequest('eventos');
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 46 |     if (resUsers.success) setUsers(resUsers.dados);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 47 |     if (resEventos.success) setEventos(resEventos.dados);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 48 |   };
+     | ^^^^^ `carregarTudo` is declared here
+  49 |
+  50 |   const exibirAlerta = (texto, tipo) => {
+  51 |     setMsg({ texto, tipo });  react-hooks/immutability
+  139:46  error  'id' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 no-undef
+
+C:\Users\bacch\Downloads\CRMreact\crm\sistema-checkin-react\src\pages\WelcomeVIP.jsx
+  42:13  error  Error: Cannot access variable before it is declared
+
+`showWelcome` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  40 |             const next = queue[0];
+  41 |             setQueue(prev => prev.slice(1));
+> 42 |             showWelcome(next);
+     |             ^^^^^^^^^^^ `showWelcome` accessed before it is declared
+  43 |         }
+  44 |     }, [queue, activeGuest]);
+  45 |
+
+  44 |     }, [queue, activeGuest]);
+  45 |
+> 46 |     const showWelcome = (guest) => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 47 |         setActiveGuest(guest);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 48 |         dispararConfete();
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 49 |         tocarSomBoasVindas();
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 50 |
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 51 |         if (timeoutRef.current) clearTimeout(timeoutRef.current);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 52 |         timeoutRef.current = setTimeout(() => {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 53 |             setActiveGuest(null);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 54 |         }, 8000); // 8 segundos de gl├│ria na tela
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 55 |     };
+     | ^^^^^^^ `showWelcome` is declared here
+  56 |
+  57 |     const dispararConfete = () => {
+  58 |         const duration = 5 * 1000;  react-hooks/immutability
+  78:18  error  'e' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+  78:21  error  Empty block statement                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      no-empty
+
+Ô£û 53 problems (53 errors, 0 warnings)
+
