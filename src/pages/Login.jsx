@@ -61,66 +61,98 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4 font-sans transition-colors duration-300">
-      <div className="bg-white dark:bg-slate-800 p-8 sm:p-10 rounded-3xl w-full max-w-sm text-center shadow-2xl transition-all duration-300">
+    <div className="min-h-screen flex items-center justify-center bg-[#0f1522] px-4 font-sans selection:bg-blue-500/30">
+      
+      <div className="relative bg-[#1a2333] border border-[#2a374a] p-8 sm:p-10 rounded-xl w-full max-w-md text-center shadow-2xl overflow-hidden animate-slide-up-soft">
         
-        <div className="w-16 h-16 bg-sky-500 rounded-2xl mx-auto mb-6 flex items-center justify-center text-white font-bold text-3xl shadow-lg shadow-sky-500/30">
-          <i className={`bi ${show2FA ? 'bi-shield-lock-fill' : 'bi-ticket-perforated-fill'}`}></i>
+        {/* Accent top border */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600"></div>
+
+        {/* Branding */}
+        <div className="mb-8">
+          <h1 className="text-xs font-black text-white tracking-[0.3em] uppercase mb-2">
+            Bacch Produções
+          </h1>
+          <div className="h-[1px] w-8 bg-[#2a374a] mx-auto"></div>
+        </div>
+
+        <div className="w-14 h-14 bg-[#0f1522] border border-[#2a374a] rounded-xl mx-auto mb-6 flex items-center justify-center text-blue-500 text-2xl shadow-inner">
+          <i className={`bi ${show2FA ? 'bi-shield-lock-fill' : 'bi-fingerprint'}`}></i>
         </div>
         
-        <h2 className="text-slate-900 dark:text-white text-2xl font-bold mb-1 tracking-tight">
-          {show2FA ? 'VERIFICAÇÃO 2FA' : 'SISTEMA DE ACESSO'}
+        <h2 className="text-white text-xl font-bold mb-1 tracking-tight uppercase">
+          {show2FA ? 'Verificação 2FA' : 'Acesso ao Sistema'}
         </h2>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mb-8 font-medium">
-          {show2FA ? 'Digite o código do autenticador' : 'Credenciamento e Portaria'}
+        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-8">
+          {show2FA ? 'Digite o código do autenticador' : 'Credenciamento e Portaria Segura'}
         </p>
         
         {erro && (
-          <div className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-xl text-sm mb-6 font-bold animate-pulse">
-            {erro}
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-lg text-[10px] font-bold uppercase tracking-widest mb-6 flex items-center justify-center animate-pulse">
+            <i className="bi bi-exclamation-triangle-fill mr-2 text-sm"></i> {erro}
           </div>
         )}
 
         {!show2FA ? (
-          <form onSubmit={handleLogin}>
-            <div className="text-left mb-4">
-              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 tracking-wider uppercase">USUÁRIO</label>
-              <input 
-                type="text" 
-                placeholder="Digite seu usuário" 
-                value={usuario}
-                onChange={e => setUsuario(e.target.value)} 
-                required
-                autoComplete="username" 
-                className="w-full p-3 mt-1 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all" 
-              />
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="text-left">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">
+                Usuário
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <i className="bi bi-person"></i>
+                </div>
+                <input 
+                  type="text" 
+                  placeholder="Digite seu usuário" 
+                  value={usuario}
+                  onChange={e => setUsuario(e.target.value)} 
+                  required
+                  autoComplete="username" 
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#2a374a] bg-[#0f1522] text-white focus:border-blue-500 outline-none text-sm transition-colors placeholder:text-slate-600" 
+                />
+              </div>
             </div>
 
-            <div className="text-left mb-8">
-              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 tracking-wider uppercase">SENHA</label>
-              <input 
-                type="password" 
-                placeholder="••••••••" 
-                value={senha}
-                onChange={e => setSenha(e.target.value)} 
-                required
-                autoComplete="current-password" 
-                className="w-full p-3 mt-1 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all" 
-              />
+            <div className="text-left pb-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">
+                Senha
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <i className="bi bi-key"></i>
+                </div>
+                <input 
+                  type="password" 
+                  placeholder="••••••••" 
+                  value={senha}
+                  onChange={e => setSenha(e.target.value)} 
+                  required
+                  autoComplete="current-password" 
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#2a374a] bg-[#0f1522] text-white focus:border-blue-500 outline-none text-sm transition-colors placeholder:text-slate-600" 
+                />
+              </div>
             </div>
 
             <button 
               type="submit" 
               disabled={carregando}
-              className={`w-full p-4 bg-sky-500 hover:bg-sky-600 text-white border-none rounded-xl font-bold cursor-pointer transition-all duration-300 shadow-md hover:shadow-lg shadow-sky-500/20 active:scale-95 ${carregando ? 'opacity-70 pointer-events-none' : ''}`}
+              className={`w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white border-none rounded-lg font-bold text-[11px] uppercase tracking-widest cursor-pointer transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${carregando ? 'opacity-70 pointer-events-none' : ''}`}
             >
-              {carregando ? 'AUTENTICANDO...' : <><i className="bi bi-box-arrow-in-right mr-2"></i> ENTRAR NO SISTEMA</>}
+              {carregando ? (
+                <><i className="bi bi-arrow-repeat animate-spin text-base"></i> Autenticando...</>
+              ) : (
+                <><i className="bi bi-box-arrow-in-right text-base"></i> Entrar no Sistema</>
+              )}
             </button>
           </form>
         ) : (
-          <form onSubmit={handleVerify2FA}>
-            <div className="text-left mb-8">
-              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 tracking-wider uppercase">CÓDIGO DE 6 DÍGITOS</label>
+          <form onSubmit={handleVerify2FA} className="space-y-6">
+            <div className="text-left">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex justify-center">
+                Código de 6 dígitos
+              </label>
               <input 
                 type="text" 
                 inputMode="numeric"
@@ -131,22 +163,26 @@ export default function Login() {
                 onChange={e => setOtpToken(e.target.value)} 
                 required
                 autoFocus
-                className="w-full p-4 mt-1 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-center text-3xl tracking-[1em] font-mono text-sky-500 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all" 
+                className="w-full p-4 rounded-lg border border-[#2a374a] bg-[#0f1522] text-center text-3xl tracking-[0.5em] font-mono text-blue-400 focus:border-blue-500 outline-none transition-colors" 
               />
             </div>
 
             <button 
               type="submit" 
               disabled={carregando}
-              className={`w-full p-4 bg-sky-500 hover:bg-sky-600 text-white border-none rounded-xl font-bold cursor-pointer transition-all duration-300 shadow-md hover:shadow-lg shadow-sky-500/20 active:scale-95 ${carregando ? 'opacity-70 pointer-events-none' : ''}`}
+              className={`w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white border-none rounded-lg font-bold text-[11px] uppercase tracking-widest cursor-pointer transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${carregando ? 'opacity-70 pointer-events-none' : ''}`}
             >
-              {carregando ? 'VALIDANDO...' : <><i className="bi bi-shield-check mr-2"></i> VERIFICAR</>}
+              {carregando ? (
+                <><i className="bi bi-arrow-repeat animate-spin text-base"></i> Validando...</>
+              ) : (
+                <><i className="bi bi-shield-check text-base"></i> Verificar</>
+              )}
             </button>
             
             <button 
               type="button"
               onClick={() => setShow2FA(false)}
-              className="mt-4 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors uppercase tracking-widest"
+              className="mt-4 w-full text-[10px] font-bold text-slate-500 hover:text-white transition-colors uppercase tracking-widest"
             >
               Voltar ao login
             </button>
@@ -155,4 +191,4 @@ export default function Login() {
       </div>
     </div>
   );
-}
+}

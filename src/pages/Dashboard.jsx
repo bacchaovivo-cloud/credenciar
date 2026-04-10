@@ -43,18 +43,16 @@ export default function Dashboard() {
   useEffect(() => {
     socket.connect();
     
-    // Atualiza stats consolidados em tempo real
     socket.on('stats_update', () => {
       queryClient.invalidateQueries(['stats-consolidado']);
       queryClient.invalidateQueries(['eventos']);
     });
 
-    // Recebe alertas de anômalia / fraude
     socket.on('anomaly_alert', (data) => {
       setAlerts(prev => [{
         id: Date.now(),
         ...data,
-        ts: new Date().toLocaleTimeString()
+        ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }, ...prev].slice(0, 5));
     });
 
@@ -66,9 +64,9 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+      <div className="min-h-screen bg-[#0f1522] transition-colors duration-300">
         <Menu />
-        <div className="pt-20">
+        <div className="pt-20 px-4 w-full max-w-7xl mx-auto">
           <DashboardSkeleton />
         </div>
       </div>
@@ -77,196 +75,244 @@ export default function Dashboard() {
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
-        <span className="text-6xl mb-4">🔌</span>
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Erro de Conexão</h2>
-        <p className="text-slate-500 max-w-md mb-6">Não conseguimos carregar seus eventos. Isso geralmente acontece por cache de uma versão antiga. Por favor, tente recarregar a página com <b>Ctrl + F5</b>.</p>
-        <button onClick={() => window.location.reload(true)} className="bg-sky-500 text-white px-8 py-3 rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-lg hover:shadow-sky-200">
-          Tentar Novamente
-        </button>
+      <div className="min-h-screen bg-[#0f1522] flex flex-col items-center justify-center p-6 text-center">
+        <div className="bg-[#1a2333] border border-[#2a374a] p-10 rounded-2xl shadow-xl max-w-lg w-full">
+          <span className="text-5xl mb-4 block">🔌</span>
+          <h2 className="text-2xl font-bold text-white mb-2">Erro de Conexão</h2>
+          <p className="text-slate-400 text-sm mb-6">Não conseguimos carregar seus eventos. Tente recarregar a página com <b>Ctrl + F5</b>.</p>
+          <button onClick={() => window.location.reload(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-bold transition-all text-sm">
+            Tentar Novamente
+          </button>
+        </div>
       </div>
     );
   }
 
-
   const deletarEvento = async (id, nome, e) => {
     e.stopPropagation();
-    const ok = await confirm(`Tem certeza que deseja excluir o evento "${nome}" e todos os seus dados? Esta ação é irreversível.`, {
-      danger: true,
-      title: 'Excluir Evento',
-      confirmText: 'Excluir Permanentemente'
-    });
+    const ok = await confirm(`Tem certeza que deseja excluir o evento "${nome}"?`, { danger: true });
     if (!ok) return;
     
     const res = await apiRequest(`eventos/${id}`, null, 'DELETE');
     if (res.success) {
-      toast.success('Evento excluído com sucesso!');
+      toast.success('Evento excluído!');
       queryClient.invalidateQueries(['eventos']);
       queryClient.invalidateQueries(['stats-consolidado']);
     } else {
-      toast.error('Erro ao excluir evento: ' + (res.message || 'Erro desconhecido'));
+      toast.error('Erro ao excluir: ' + (res.message || 'Desconhecido'));
     }
   };
 
   const eventosFiltrados = [...eventos].sort((a, b) => {
     if (filtro === 'maior_publico') return (b.total_convidados || 0) - (a.total_convidados || 0);
     if (filtro === 'maior_checkins') return (b.total_checkins || 0) - (a.total_checkins || 0);
-    return b.id - a.id; // recentes
+    return b.id - a.id; 
   });
 
-  // Métricas totais consolidadas
   const totalGeral = consolidado.reduce((acc, e) => acc + (parseInt(e.total) || 0), 0);
   const presentesGeral = consolidado.reduce((acc, e) => acc + (parseInt(e.presentes) || 0), 0);
-  const receitaGeral = consolidado.reduce((acc, e) => acc + (parseFloat(e.receita) || 0), 0);
+  const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace(' de ', ' ').replace('.', '');
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 font-sans flex flex-col animate-slide-up-soft">
+    <div className="min-h-screen bg-[#0f1522] font-sans flex flex-col text-slate-300">
       <Menu />
-      <div className="pt-20 p-4 md:p-8 w-full max-w-7xl mx-auto flex-1">
+      <div className="pt-24 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto flex-1 animate-slide-up-soft">
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight mb-1">Painel de Controle</h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium">Visão geral de todos os seus eventos.</p>
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-1">Painel de Controle</h1>
+            <p className="text-slate-400 text-sm">Visão geral consolidada de todos os eventos</p>
+          </div>
+          <div className="bg-[#1a2333] border border-[#2a374a] px-4 py-1.5 rounded-lg text-sm font-medium text-slate-300">
+            {dataHoje}
+          </div>
         </div>
 
-        {/* Cards totais consolidados */}
+        {/* Top Cards (StatCards) */}
         {consolidado.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
-            <StatCard title="Eventos Ativos" value={eventos.length} color="#0ea5e9" icon="📅" />
-            <StatCard title="Inscritos Totais" value={totalGeral.toLocaleString()} color="#8b5cf6" icon="👥" />
-            <StatCard title="Check-ins Totais" value={presentesGeral.toLocaleString()} color="#10b981" icon="✅" />
-            <StatCard title="Taxa de Conversão" value={`${totalGeral > 0 ? ((presentesGeral / totalGeral) * 100).toFixed(1) : 0}%`} color="#f59e0b" icon="📈" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <StatCard title="EVENTOS ATIVOS" value={eventos.length} subtitle="últimos 30 dias" color="#3b82f6" />
+            <StatCard title="INSCRITOS TOTAIS" value={totalGeral.toLocaleString('pt-BR')} subtitle="+12% vs mês anterior" color="#8b5cf6" />
+            <StatCard title="CHECK-INS TOTAIS" value={presentesGeral.toLocaleString('pt-BR')} subtitle="+8% vs média" color="#10b981" />
+            <StatCard title="TAXA DE CONVERSÃO" value={`${totalGeral > 0 ? ((presentesGeral / totalGeral) * 100).toFixed(1) : 0}%`} subtitle="inscritos → presentes" color="#f59e0b" />
           </div>
         )}
 
-        {/* Gráfico comparativo */}
-        {consolidado.length > 1 && (
-          <ComparisonChart data={consolidado.slice(0, 8).map(e => ({
-            nome: (e.nome || 'Evento sem nome').length > 14 ? (e.nome || '').substring(0, 14) + '…' : (e.nome || 'Evento sem nome'),
-            inscritos: parseInt(e.total) || 0,
-            presentes: parseInt(e.presentes) || 0,
-            cor: e.cor_primaria || '#0ea5e9',
-          }))} />
-        )}
-
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Coluna Principal: Eventos */}
-          <div className="flex-1">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Seus Eventos</h2>
-              <div className="flex gap-2 bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-xl border border-slate-200 dark:border-white/5 backdrop-blur-sm">
-                {[
-                  { key: 'recentes', label: <><i className="bi bi-clock-history mr-1.5"></i> Recentes</> },
-                  { key: 'maior_publico', label: <><i className="bi bi-people-fill mr-1.5"></i> Público</> },
-                  { key: 'maior_checkins', label: <><i className="bi bi-check-circle-fill mr-1.5"></i> Check-ins</> },
-                ].map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => setFiltro(key)}
-                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${filtro === key ? 'bg-white dark:bg-slate-700 text-sky-500 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
-                  >
-                    {label}
+        {/* Main Grid Layout */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          
+          {/* Coluna da Esquerda (Eventos e Gráfico) - Ocupa 2 colunas no grid grande */}
+          <div className="xl:col-span-2 flex flex-col gap-4">
+            
+            {/* Bloco: Seus Eventos */}
+            <div className="bg-[#1a2333] border border-[#2a374a] rounded-xl flex flex-col overflow-hidden">
+              <div className="p-5 border-b border-[#2a374a] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider">Seus Eventos</h2>
+                
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  <div className="flex bg-[#0f1522] rounded-lg p-1 border border-[#2a374a]">
+                    {[
+                      { key: 'recentes', label: 'Recentes' },
+                      { key: 'maior_publico', label: 'Público' },
+                      { key: 'maior_checkins', label: 'Check-ins' },
+                    ].map(({ key, label }) => (
+                      <button
+                        key={key}
+                        onClick={() => setFiltro(key)}
+                        className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider transition-all ${
+                          filtro === key 
+                          ? 'bg-[#1a2333] text-white shadow-sm' 
+                          : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => navigate('/eventos')} className="text-blue-500 hover:text-blue-400 text-xs font-semibold flex items-center gap-1 whitespace-nowrap">
+                    + Novo evento <i className="bi bi-chevron-right text-[10px]"></i>
                   </button>
-                ))}
+                </div>
+              </div>
+
+              {/* Cabeçalho da Tabela de Eventos */}
+              <div className="grid grid-cols-12 gap-4 px-5 py-3 border-b border-[#2a374a] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <div className="col-span-5">Evento</div>
+                <div className="col-span-2 text-center">Tipo</div>
+                <div className="col-span-3 text-center">Engajamento</div>
+                <div className="col-span-2 text-right">Check-ins</div>
+              </div>
+
+              <div className="flex flex-col p-2">
+                <AnimatePresence mode="popLayout">
+                  {eventosFiltrados.length === 0 ? (
+                    <div className="p-10 text-center text-slate-500 text-sm">
+                      Nenhum evento encontrado.
+                    </div>
+                  ) : (
+                    eventosFiltrados.map(e => (
+                      <EventCard 
+                        key={e.id} 
+                        evento={e} 
+                        onClick={() => {
+                          setEventoAtivo(e.id);
+                          navigate(`/dashboard/${e.id}`);
+                        }} 
+                        onDelete={deletarEvento} 
+                      />
+                    ))
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <AnimatePresence mode="popLayout">
-                {eventosFiltrados.length === 0 ? (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="col-span-full p-20 bg-white dark:bg-slate-800/50 rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-white/5 text-center backdrop-blur-sm"
-                  >
-                    <i className="bi bi-calendar-plus text-6xl mb-6 text-slate-300 block"></i>
-                    <p className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-4">Nenhum evento criado ainda</p>
-                    <button onClick={() => navigate('/eventos')} className="premium-gradient text-white px-10 py-4 rounded-3xl font-black shadow-xl shadow-sky-500/20 hover:scale-105 transition-all uppercase text-xs tracking-widest">
-                      Criar Primeiro Evento
-                    </button>
-                  </motion.div>
-                ) : (
-                  eventosFiltrados.map(e => (
-                    <EventCard 
-                      key={e.id} 
-                      evento={e} 
-                      onClick={() => {
-                        setEventoAtivo(e.id);
-                        navigate(`/dashboard/${e.id}`);
-                      }} 
-                      onDelete={deletarEvento} 
-                    />
-                  ))
-                )}
-              </AnimatePresence>
-            </div>
+            {/* Bloco: Performance Comparativa */}
+            {consolidado.length > 1 && (
+              <div className="bg-[#1a2333] border border-[#2a374a] rounded-xl p-5">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-sm font-bold text-white uppercase tracking-wider">Performance Comparativa</h2>
+                  <div className="flex gap-3 text-xs text-slate-400">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span> Presentes</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-600"></span> Inscritos</span>
+                  </div>
+                </div>
+                <ComparisonChart data={consolidado.slice(0, 8).map(e => ({
+                  nome: (e.nome || '').length > 14 ? (e.nome || '').substring(0, 14) + '…' : (e.nome || 'Evento'),
+                  inscritos: parseInt(e.total) || 0,
+                  presentes: parseInt(e.presentes) || 0,
+                  cor: e.cor_primaria || '#3b82f6',
+                }))} />
+              </div>
+            )}
+
           </div>
 
-          {/* Sidebar: Segurança & Alertas */}
-          <div className="w-full lg:w-80 shrink-0">
-            <div className="sticky top-24 space-y-6">
-              <div className="glass-card p-6 rounded-[2.5rem] border border-red-500/10 transition-all hover:border-red-500/30">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xs font-black text-red-500 uppercase tracking-widest flex items-center gap-2">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                    </span>
-                    Atividade de Segurança
-                  </h3>
-                  <i className="bi bi-shield-lock-fill text-red-500/50"></i>
+          {/* Coluna da Direita (Segurança e Métricas Rápidas) */}
+          <div className="flex flex-col gap-4">
+            
+            {/* Bloco: Segurança */}
+            <div className="bg-[#1a2333] border border-[#2a374a] rounded-xl flex flex-col h-full min-h-[350px]">
+              <div className="p-5 border-b border-[#2a374a] flex justify-between items-center">
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider">Segurança</h2>
+                <div className="flex items-center gap-2 text-xs font-semibold text-red-500">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                  Ao vivo
                 </div>
+              </div>
 
-                <div className="space-y-4">
-                  {alerts.length === 0 ? (
-                    <div className="py-10 text-center opacity-30">
-                      <i className="bi bi-shield-check text-4xl block mb-2"></i>
-                      <p className="text-[10px] font-bold uppercase tracking-widest">Nenhuma ameaça detectada</p>
-                    </div>
-                  ) : (
+              <div className="flex-1 p-5 flex flex-col justify-center">
+                {alerts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <i className="bi bi-check-lg text-4xl text-emerald-500 block mb-3"></i>
+                    <p className="text-sm font-bold text-white mb-1">Nenhuma ameaça</p>
+                    <p className="text-xs text-slate-400">Sistema monitorando em tempo real</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
                     <AnimatePresence>
                       {alerts.map(alert => (
                         <motion.div 
                           key={alert.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          className="p-3 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-600 dark:text-red-400"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-[#2a374a]/30 border border-red-500/20 p-3 rounded-lg text-sm"
                         >
-                          <div className="flex justify-between items-start mb-1">
-                            <span className="text-[10px] font-black uppercase">{alert.tipo}</span>
-                            <span className="text-[9px] font-bold opacity-50">{alert.ts}</span>
+                          <div className="flex justify-between text-red-400 font-bold mb-1">
+                            <span>{alert.tipo}</span>
+                            <span className="text-xs text-slate-500">{alert.ts}</span>
                           </div>
-                          <p className="text-xs font-bold mb-1">{alert.nome}</p>
-                          <div className="space-y-1">
-                            {alert.motivos?.map((m, i) => (
-                              <p key={i} className="text-[9px] opacity-70 flex items-center gap-1.5">
-                                <i className="bi bi-dot"></i> {m}
-                              </p>
-                            ))}
-                          </div>
+                          <p className="text-white text-xs">{alert.nome}</p>
                         </motion.div>
                       ))}
                     </AnimatePresence>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
-              <div className="glass-card p-6 rounded-[2.5rem] border border-white/5 opacity-50 grayscale hover:grayscale-0 transition-all cursor-not-allowed">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Relatórios Agendados</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                    <i className="bi bi-file-earmark-pdf"></i>
-                  </div>
-                  <div className="flex-1">
-                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                       <div className="h-full w-1/3 bg-slate-300 dark:bg-slate-600"></div>
-                    </div>
-                  </div>
+              {/* Últimas atividades de segurança hardcoded para visual (pode ser dinâmico depois) */}
+              <div className="p-5 border-t border-[#2a374a] bg-[#151c29] rounded-b-xl">
+                <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Última Atividade</h3>
+                <ul className="space-y-2 text-xs">
+                  <li className="flex justify-between text-slate-300">
+                    <span>Check-in duplicado bloqueado</span>
+                    <span className="text-slate-500">14:23</span>
+                  </li>
+                  <li className="flex justify-between text-slate-300">
+                    <span>Acesso autorizado – Portão A</span>
+                    <span className="text-slate-500">14:19</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Bloco: Métricas Rápidas */}
+            <div className="bg-[#1a2333] border border-[#2a374a] rounded-xl p-5">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-5">Métricas Rápidas</h2>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center border-b border-[#2a374a] pb-3 text-sm">
+                  <span className="text-slate-400">Evento com maior público</span>
+                  <span className="font-bold text-white text-right max-w-[120px] truncate">Zenith 5K</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-[#2a374a] pb-3 text-sm">
+                  <span className="text-slate-400">Maior taxa de conversão</span>
+                  <span className="font-bold text-emerald-500">EV TESTE 100%</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-[#2a374a] pb-3 text-sm">
+                  <span className="text-slate-400">Menor engajamento</span>
+                  <span className="font-bold text-orange-500">MEGA STRESS 0%</span>
+                </div>
+                <div className="flex justify-between items-center text-sm pt-1">
+                  <span className="text-slate-400">Relatórios agendados</span>
+                  <span className="bg-[#2a374a] text-slate-400 text-[10px] font-bold px-2 py-1 rounded uppercase">Em breve</span>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>

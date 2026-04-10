@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { apiRequest } from '../services/api';
+import Menu from '../components/Menu';
 
 export default function Sorteio() {
   const { eventoId } = useParams();
@@ -14,7 +15,6 @@ export default function Sorteio() {
   const [historico, setHistorico] = useState([]);
   const [velocidade, setVelocidade] = useState(60);
   const audioCtxRef = useRef(null);
-  const intervalRef = useRef(null);
   const timeoutRef = useRef(null);
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function Sorteio() {
     carregarParticipantes();
   }, [eventoAtivo]);
 
-  // Som de roleta com Web Audio API (sem arquivo MP3)
+  // Som de roleta com Web Audio API
   const tocarTique = (freq = 440) => {
     try {
       if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -60,7 +60,7 @@ export default function Sorteio() {
     try {
       if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       const ctx = audioCtxRef.current;
-      const notas = [523, 659, 784, 1047]; // C E G C (acorde vencedor)
+      const notas = [523, 659, 784, 1047]; // C E G C
       notas.forEach((freq, i) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -84,7 +84,7 @@ export default function Sorteio() {
 
     let tempo = 0;
     const DURACAO_TOTAL = 5000;
-    let velAtual = 60; // ms por troca (começa rápido)
+    let velAtual = 60;
 
     const rodar = () => {
       if (tempo >= DURACAO_TOTAL) {
@@ -97,12 +97,10 @@ export default function Sorteio() {
       const idx = Math.floor(Math.random() * participantes.length);
       setNomeAtual(participantes[idx].nome.toUpperCase());
       
-      // Frequência do tique sobe junto com a desaceleração
       const progresso = tempo / DURACAO_TOTAL;
       const freq = 300 + progresso * 500;
       tocarTique(freq);
 
-      // Desacelera progressivamente nos últimos 60%
       if (progresso > 0.4) {
         velAtual = Math.min(60 + (progresso - 0.4) * 1800, 600);
       }
@@ -126,127 +124,131 @@ export default function Sorteio() {
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
     const randomInRange = (min, max) => Math.random() * (max - min) + min;
+    
     const spray = setInterval(() => {
       const timeLeft = animationEnd - Date.now();
       if (timeLeft <= 0) return clearInterval(spray);
       const particleCount = 50 * (timeLeft / duration);
-      confetti({ ...defaults, particleCount, colors: ['#ffd700', '#ff6b35', '#f7931e'], origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-      confetti({ ...defaults, particleCount, colors: ['#00d4ff', '#7c3aed', '#10b981'], origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+      confetti({ ...defaults, particleCount, colors: ['#fbbf24', '#f59e0b', '#d97706'], origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+      confetti({ ...defaults, particleCount, colors: ['#3b82f6', '#8b5cf6', '#10b981'], origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
     }, 250);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 overflow-hidden relative"
-      style={{ background: 'radial-gradient(ellipse at center, #0f172a 0%, #020617 100%)' }}>
-      
-      {/* Header */}
-      <div className="absolute top-0 w-full px-4 md:px-8 py-4 md:py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center z-10 border-b border-slate-800/50 gap-3">
-        <h1 className="text-2xl md:text-3xl font-black text-white tracking-widest">
-          <span className="text-sky-400">BACCH</span> SORTEIOS
-        </h1>
-        <select
-          className="w-full sm:w-auto bg-slate-900 border-2 border-slate-700 text-white rounded-xl px-4 py-2.5 font-bold cursor-pointer hover:border-sky-500 transition-colors focus:outline-none text-sm"
-          value={eventoAtivo}
-          onChange={e => setEventoAtivo(e.target.value)}
-        >
-          <option value="">Selecione o Evento</option>
-          {eventos.map(ev => <option key={ev.id} value={ev.id}>{ev.nome}</option>)}
-        </select>
-      </div>
+    <div className="min-h-screen bg-[#0f1522] flex flex-col font-sans text-slate-300">
 
-      {/* Main arena */}
-      <div className="z-10 w-full max-w-4xl flex flex-col items-center mt-16">
-        {!eventoAtivo ? (
-          <div className="text-4xl text-slate-700 font-bold opacity-30 text-center">SELECIONE O EVENTO</div>
-        ) : (
-          <>
-            <div className="mb-6 text-sky-400 font-bold uppercase tracking-widest text-lg bg-sky-900/20 px-6 py-2 rounded-full border border-sky-800/40">
-              {participantes.length} participante{participantes.length !== 1 ? 's' : ''} na disputa
+
+      <div className="flex-1 flex flex-col w-full max-w-[1400px] mx-auto p-6 md:p-12 relative animate-slide-up-soft">
+        
+        {/* Header */}
+        <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center z-10 gap-4 mb-10">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-white tracking-widest uppercase">
+              <span className="text-blue-500">Bacch</span> Sorteios
+            </h1>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Sorteador Digital Auditável</p>
+          </div>
+          <select
+            className="w-full sm:w-auto bg-[#1a2333] border border-[#2a374a] text-white rounded-lg px-4 py-2.5 font-bold cursor-pointer hover:border-blue-500 transition-colors focus:outline-none text-xs uppercase tracking-widest"
+            value={eventoAtivo}
+            onChange={e => setEventoAtivo(e.target.value)}
+          >
+            <option value="">Selecione o Evento</option>
+            {eventos.map(ev => <option key={ev.id} value={ev.id}>{ev.nome}</option>)}
+          </select>
+        </div>
+
+        {/* Main arena */}
+        <div className="z-10 w-full flex-1 flex flex-col items-center justify-center">
+          {!eventoAtivo ? (
+            <div className="text-xl md:text-2xl text-slate-600 font-bold uppercase tracking-widest border border-dashed border-[#2a374a] p-12 rounded-xl text-center w-full max-w-2xl">
+              SELECIONE UM EVENTO ACIMA
             </div>
+          ) : (
+            <div className="w-full max-w-5xl flex flex-col items-center">
+              <div className="mb-6 text-blue-400 font-bold uppercase tracking-widest text-[11px] bg-blue-500/10 border border-blue-500/20 px-4 py-1.5 rounded">
+                {participantes.length} participante{participantes.length !== 1 ? 's' : ''} apto{participantes.length !== 1 ? 's' : ''} ao sorteio
+              </div>
 
-            {/* Slot machine display */}
-            <div className={`w-full rounded-[2rem] p-10 min-h-[280px] flex items-center justify-center relative overflow-hidden transition-all duration-700
-              ${vencedor
-                ? 'bg-gradient-to-b from-amber-950/80 to-slate-900 border-4 border-amber-400 shadow-[0_0_100px_rgba(251,191,36,0.4)] scale-105'
-                : sorteando
-                  ? 'bg-slate-900 border-4 border-sky-500/50 shadow-[0_0_60px_rgba(14,165,233,0.2)]'
-                  : 'bg-slate-900 border-4 border-slate-800'
-              }`}>
-              
-              {/* Linhas decorativas slot machine */}
-              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-sky-500/30 to-transparent"></div>
-              <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-sky-500/30 to-transparent"></div>
-
-              {vencedor && (
-                <div className="absolute top-0 w-full text-center py-3 bg-amber-400 text-amber-950 font-black tracking-[0.3em] text-sm flex items-center justify-center gap-3">
-                  <i className="bi bi-trophy-fill"></i> GRANDE VENCEDOR(A) <i className="bi bi-trophy-fill"></i>
-                </div>
-              )}
-
-              <div className="text-center px-4">
-                <div className={`font-black uppercase leading-none text-center select-none transition-all
-                  ${sorteando ? 'blur-[1px] scale-95 text-sky-200' : vencedor ? 'text-white scale-110' : 'text-slate-500'}
-                  ${participantes.length > 0 ? 'text-[2.5rem] sm:text-[4rem] md:text-[6rem] lg:text-[7rem]' : 'text-2xl md:text-4xl'}
-                `}
-                  style={{
-                    textShadow: vencedor ? '0 0 40px rgba(251,191,36,0.6), 0 0 80px rgba(251,191,36,0.3)' : 
-                                sorteando ? '0 0 20px rgba(14,165,233,0.5)' : 'none',
-                    transition: sorteando ? `all ${velocidade}ms ease` : 'all 0.5s ease',
-                    fontFamily: 'system-ui, sans-serif'
-                  }}>
-                  {nomeAtual}
-                </div>
+              {/* Slot machine display */}
+              <div className={`w-full rounded-2xl p-10 min-h-[350px] flex items-center justify-center relative overflow-hidden transition-all duration-500 border
+                ${vencedor
+                  ? 'bg-[#1a2333] border-amber-500 shadow-[0_0_50px_rgba(245,158,11,0.15)] scale-[1.02]'
+                  : sorteando
+                    ? 'bg-[#0f1522] border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.15)]'
+                    : 'bg-[#1a2333] border-[#2a374a]'
+                }`}>
+                
                 {vencedor && (
-                  <div className="mt-6">
-                    <span className="text-xl font-bold tracking-widest text-amber-400 bg-amber-950/50 px-6 py-2 rounded-full border border-amber-500/30">
-                      SETOR: {vencedor.categoria}
-                    </span>
+                  <div className="absolute top-0 left-0 right-0 py-2 bg-amber-500 text-amber-950 font-black tracking-widest text-[10px] uppercase flex items-center justify-center gap-3">
+                    <i className="bi bi-trophy-fill"></i> GRANDE VENCEDOR(A) <i className="bi bi-trophy-fill"></i>
                   </div>
+                )}
+
+                <div className="text-center px-4 w-full">
+                  <div className={`font-black uppercase leading-none text-center select-none transition-all
+                    ${sorteando ? 'blur-[1px] scale-95 text-blue-300' : vencedor ? 'text-amber-400 scale-110' : 'text-slate-400'}
+                    ${participantes.length > 0 ? 'text-4xl sm:text-6xl md:text-7xl lg:text-8xl' : 'text-2xl md:text-4xl'}
+                  `}
+                    style={{
+                      transition: sorteando ? `all ${velocidade}ms ease` : 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                    }}>
+                    {nomeAtual}
+                  </div>
+                  
+                  {vencedor && (
+                    <div className="mt-8 animate-slide-up-soft">
+                      <span className="text-[10px] font-bold tracking-widest text-amber-400 bg-amber-500/10 px-4 py-1.5 rounded border border-amber-500/30 uppercase">
+                        SETOR: {vencedor.categoria}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Controles */}
+              <div className="mt-10 flex flex-col sm:flex-row gap-4 items-center">
+                <button
+                  onClick={iniciarSorteio}
+                  disabled={sorteando || participantes.length === 0}
+                  className="px-8 py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-[#1a2333] disabled:text-slate-500 disabled:border-[#2a374a] disabled:border border border-transparent text-white font-bold text-sm tracking-widest uppercase rounded-xl transition-all active:scale-95 flex items-center gap-3"
+                >
+                  {sorteando ? <><i className="bi bi-arrow-repeat animate-spin"></i> Processando...</> : <><i className="bi bi-stars text-amber-300"></i> Rodar o Sorteio</>}
+                </button>
+                
+                {vencedor && (
+                  <button
+                    onClick={() => { setVencedor(null); setNomeAtual('PRONTO'); }}
+                    className="px-6 py-4 bg-[#1a2333] border border-[#2a374a] text-slate-400 hover:text-white hover:bg-[#2a374a] font-bold uppercase tracking-widest rounded-xl transition-colors text-xs"
+                  >
+                    Resetar Roleta
+                  </button>
                 )}
               </div>
             </div>
+          )}
+        </div>
 
-            {/* Controles */}
-            <div className="mt-10 flex gap-4 items-center">
-              <button
-                onClick={iniciarSorteio}
-                disabled={sorteando || participantes.length === 0}
-                className="group relative px-12 py-5 bg-gradient-to-b from-sky-400 to-blue-600 hover:from-sky-300 hover:to-blue-500 disabled:from-slate-700 disabled:to-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-2xl tracking-widest uppercase rounded-3xl shadow-[0_10px_40px_rgba(14,165,233,0.4)] hover:shadow-[0_15px_60px_rgba(14,165,233,0.6)] hover:-translate-y-1 active:translate-y-0 transition-all overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-white/10 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-700"></div>
-                {sorteando ? <><i className="bi bi-arrow-repeat animate-spin mr-2"></i> Sorteando...</> : <><i className="bi bi-stars mr-2 text-amber-300"></i> Rodar a Roleta</>}
-              </button>
-              {vencedor && (
-                <button
-                  onClick={() => { setVencedor(null); setNomeAtual('PRONTO'); }}
-                  className="px-6 py-5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold uppercase rounded-3xl transition-colors text-sm"
-                >
-                  Novo Sorteio
-                </button>
-              )}
+        {/* Histórico de vencedores */}
+        {historico.length > 0 && (
+          <div className="fixed bottom-6 right-6 z-50 bg-[#1a2333] border border-[#2a374a] rounded-xl p-4 max-w-xs w-full shadow-2xl">
+            <h3 className="text-slate-400 font-bold text-[9px] uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-[#2a374a] pb-2">
+              <i className="bi bi-list-check text-blue-500"></i> Histórico da Sessão
+            </h3>
+            <div className="space-y-3">
+              {historico.map((h, i) => (
+                <div key={i} className="flex justify-between items-center text-xs">
+                  <span className={`font-bold flex items-center gap-2 uppercase tracking-wide truncate pr-2 ${i === 0 ? 'text-amber-400' : 'text-slate-300'}`}>
+                    {i === 0 ? <i className="bi bi-trophy-fill text-amber-500 text-[10px]"></i> : <i className="bi bi-person-check text-slate-500 text-[10px]"></i>} 
+                    <span className="truncate">{h.nome}</span>
+                  </span>
+                  <span className="text-slate-500 text-[9px] font-mono shrink-0">{h.hora}</span>
+                </div>
+              ))}
             </div>
-          </>
+          </div>
         )}
       </div>
-
-      {/* Histórico de vencedores */}
-      {historico.length > 0 && (
-        <div className="fixed bottom-4 right-4 md:absolute md:bottom-6 md:right-6 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-2xl p-3 md:p-4 max-w-[calc(100vw-2rem)] md:max-w-xs w-full">
-          <h3 className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-3 flex items-center gap-2">
-            <i className="bi bi-list-check text-sky-500"></i> Histórico da Sessão
-          </h3>
-          <div className="space-y-2">
-            {historico.map((h, i) => (
-              <div key={i} className="flex justify-between items-center text-sm">
-                <span className={`font-bold flex items-center gap-2 ${i === 0 ? 'text-amber-400' : 'text-slate-400'}`}>
-                  {i === 0 ? <i className="bi bi-trophy-fill text-xs"></i> : ''} {h.nome}
-                </span>
-                <span className="text-slate-600 text-xs">{h.hora}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

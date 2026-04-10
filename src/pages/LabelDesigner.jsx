@@ -43,7 +43,6 @@ export default function LabelDesigner() {
       if (Array.isArray(res.dados)) {
         setElements(res.dados);
       } else {
-        // Migration from old object format
         const old = res.dados;
         setElements([
           { id: 'nome', label: 'NOME DO GUEST', isStatic: false, active: true, x: old.nome_x || 10, y: old.nome_y || 20, align: 'center', bold: true, size: old.nome_font ? old.nome_font * 2 : 24 },
@@ -56,7 +55,6 @@ export default function LabelDesigner() {
   };
 
   const salvar = async () => {
-    // Sort array by Y ascending before saving so printer prints top to bottom correctly
     const finalArray = [...elements].sort((a, b) => a.y - b.y);
     const res = await apiRequest(`eventos/${eventoId}/label-config`, finalArray, 'PUT');
     if (res.success) {
@@ -72,8 +70,8 @@ export default function LabelDesigner() {
 
   const handleDrag = (e, index) => {
     const rect = e.currentTarget.parentElement.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 150; // Normalizado para 150mm
-    const y = ((e.clientY - rect.top) / rect.height) * 100; // Normalizado para 100mm
+    const x = ((e.clientX - rect.left) / rect.width) * 150; 
+    const y = ((e.clientY - rect.top) / rect.height) * 100; 
     
     setElements(prev => {
         const arr = [...prev];
@@ -91,7 +89,6 @@ export default function LabelDesigner() {
   };
 
   const addField = (fieldTemplate) => {
-    // Adiciona o campo no centro se já não existir
     if (elements.some(e => e.id === fieldTemplate.id)) {
         exibirAlerta("Este campo já foi adicionado ao layout.", "erro");
         return;
@@ -117,37 +114,39 @@ export default function LabelDesigner() {
     setSelectedElementIndex(null);
   };
 
-  if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Sincronizando Canvas...</div>;
+  if (loading) return <div className="min-h-screen bg-[#0f1522] flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-widest">Sincronizando Canvas...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans flex flex-col text-white">
+    <div className="min-h-screen bg-[#0f1522] font-sans flex flex-col text-slate-300">
       <Menu />
 
-      <div className="p-6 md:p-12 max-w-[1400px] mx-auto w-full flex-1">
+      <div className="p-6 md:p-12 max-w-[1400px] mx-auto w-full flex-1 animate-slide-up-soft">
         {msg.texto && (
-            <div className={`mb-6 p-4 rounded-xl text-sm font-bold uppercase tracking-widest text-center ${msg.tipo === 'erro' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400 animate-pulse'}`}>
+            <div className={`mb-6 p-4 rounded-lg text-xs font-bold uppercase tracking-widest text-center border ${msg.tipo === 'erro' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'}`}>
                 {msg.texto}
             </div>
         )}
 
-        <div className="flex justify-between items-center mb-10">
+        <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-black uppercase tracking-tighter">Visual Label Designer</h1>
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Zenith Standards — Array Flow Renderer</p>
+            <h1 className="text-2xl font-bold text-white tracking-tight uppercase">Visual Label Designer</h1>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1">Zenith Standards — Array Flow Renderer</p>
           </div>
-          <div className="flex gap-4">
-             <button onClick={() => navigate('/eventos')} className="px-6 py-3 text-slate-400 font-bold uppercase text-xs tracking-widest hover:text-white transition-colors">Cancelar</button>
-             <button onClick={salvar} className="px-8 py-3 bg-sky-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-sky-500/20 active:scale-95 transition-all">Salvar Template</button>
+          <div className="flex gap-3">
+             <button onClick={() => navigate('/eventos')} className="px-5 py-2.5 border border-[#2a374a] bg-[#0f1522] text-slate-400 hover:bg-[#1a2333] hover:text-white rounded-lg font-bold uppercase text-[10px] tracking-widest transition-colors">Cancelar</button>
+             <button onClick={salvar} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold uppercase text-[10px] tracking-widest shadow-lg transition-all active:scale-95 flex items-center gap-2">
+               <i className="bi bi-floppy-fill"></i> Salvar Template
+             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
           {/* CANVAS AREA */}
           <div className="flex flex-col gap-6">
-            <div className="bg-slate-900 border border-slate-800 p-10 rounded-[3rem] flex items-center justify-center min-h-[500px] shadow-inner relative overflow-hidden">
+            <div className="bg-[#1a2333] border border-[#2a374a] p-8 rounded-xl flex items-center justify-center min-h-[500px] relative overflow-hidden">
                 {/* REPRESENTAÇÃO DA ETIQUETA BROTHER (150x100mm) */}
                 <div 
-                    className="bg-white rounded-lg shadow-2xl relative cursor-crosshair overflow-hidden"
+                    className="bg-white rounded-lg shadow-2xl relative cursor-crosshair overflow-hidden border border-slate-300"
                     style={{ width: '450px', height: '300px' }} // Scale 3:1
                 >
                     {/* Linhas de Grade Táticas */}
@@ -164,7 +163,7 @@ export default function LabelDesigner() {
                                     draggable
                                     onDragEnd={(e) => handleDrag(e, index)}
                                     onClick={() => setSelectedElementIndex(index)}
-                                    className={`absolute cursor-move select-none border-2 flex items-center justify-center bg-slate-100 ${isSelected ? 'border-sky-500 z-50' : 'border-slate-300 z-10'}`}
+                                    className={`absolute cursor-move select-none border border-dashed flex items-center justify-center bg-slate-100 ${isSelected ? 'border-blue-500 bg-blue-50 z-50' : 'border-slate-300 z-10'}`}
                                     style={{ left: `${(el.x/150)*450}px`, top: `${(el.y/100)*300}px`, width: `${(el.size/150)*450}px`, height: `${(el.size/150)*450}px` }}
                                     title={el.label}
                                 >
@@ -180,7 +179,7 @@ export default function LabelDesigner() {
                                 draggable
                                 onDragEnd={(e) => handleDrag(e, index)}
                                 onClick={() => setSelectedElementIndex(index)}
-                                className={`absolute cursor-move select-none p-1 border-2 ${isSelected ? 'border-sky-500 bg-sky-500/10 z-50' : 'border-transparent z-10'}`}
+                                className={`absolute cursor-move select-none p-1 border border-dashed ${isSelected ? 'border-blue-500 bg-blue-500/10 z-50' : 'border-transparent hover:border-slate-300 z-10'}`}
                                 style={{ 
                                     left: `${(el.x/150)*450}px`, 
                                     top: `${(el.y/100)*300}px`, 
@@ -197,65 +196,65 @@ export default function LabelDesigner() {
                         );
                     })}
                 </div>
-                <p className="absolute bottom-6 text-[10px] font-black text-slate-600 uppercase tracking-widest text-center px-10">
+                <p className="absolute bottom-6 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-center px-10">
                    A impressora térmica imprime de cima para baixo.<br/>Arraste para posicionar no eixo X (Horizontal) ou alterar a Ordem de Impressão (Vertical Y).
                 </p>
             </div>
 
             {/* ADICIONAR NOVOS CAMPOS */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl">
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Adicionar Campo Disponível</h4>
-                <div className="flex flex-wrap gap-3">
+            <div className="bg-[#1a2333] border border-[#2a374a] p-6 rounded-xl">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Adicionar Campo Disponível</h4>
+                <div className="flex flex-wrap gap-2">
                     {AVAILABLE_FIELDS.filter(f => !elements.some(e => e.id === f.id)).map(field => (
                         <button 
                             key={field.id}
                             onClick={() => addField(field)}
-                            className="px-4 py-2 bg-slate-800 border border-slate-700 hover:border-sky-500 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors"
+                            className="px-3 py-2 bg-[#0f1522] border border-[#2a374a] hover:border-blue-500 text-slate-400 hover:text-white text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-1.5"
                         >
-                            <i className="bi bi-plus-lg mr-2"></i>
+                            <i className="bi bi-plus-lg"></i>
                             {field.label}
                         </button>
                     ))}
                     {AVAILABLE_FIELDS.filter(f => !elements.some(e => e.id === f.id)).length === 0 && (
-                        <div className="text-xs text-slate-500 italic">Todos os campos standard já foram adicionados ao canvas.</div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Todos os campos standard já foram adicionados.</div>
                     )}
                 </div>
             </div>
           </div>
 
           {/* INSPECTOR AREA */}
-          <div className="bg-slate-900/50 border border-slate-800 p-8 rounded-[3rem] backdrop-blur-md">
-             <h3 className="text-xl font-black mb-8 uppercase tracking-tighter flex items-center gap-3">
-                <i className="bi bi-sliders text-sky-500"></i> Propriedades
+          <div className="bg-[#1a2333] border border-[#2a374a] p-6 rounded-xl">
+             <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 mb-6">
+                <i className="bi bi-sliders text-blue-500"></i> Propriedades
              </h3>
 
              {selectedElementIndex === null || !elements[selectedElementIndex] ? (
-                <div className="py-20 text-center text-slate-600 font-bold uppercase text-[10px] tracking-widest">Selecione um elemento no canvas para editar</div>
+                <div className="py-20 text-center text-slate-500 font-bold uppercase text-[10px] tracking-widest">Selecione um elemento no canvas para editar</div>
              ) : (
-                <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                     {(() => {
                         const el = elements[selectedElementIndex];
                         return (
                             <>
-                                <div>
-                                    <div className="flex justify-between items-center mb-3">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Elemento Selecionado</label>
-                                        <button onClick={() => removeField(selectedElementIndex)} className="text-red-400 hover:text-red-300 text-xs">
-                                            <i className="bi bi-trash"></i>
+                                <div className="pb-4 border-b border-[#2a374a]">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Elemento Selecionado</label>
+                                        <button onClick={() => removeField(selectedElementIndex)} className="text-red-400 hover:text-red-300 text-xs p-1">
+                                            <i className="bi bi-trash-fill"></i>
                                         </button>
                                     </div>
-                                    <div className="bg-slate-800 p-4 rounded-2xl text-sky-400 font-black uppercase text-xs tracking-tighter shadow-inner">
+                                    <div className="bg-[#0f1522] border border-[#2a374a] p-3 rounded-lg text-blue-400 font-bold uppercase text-[11px] tracking-widest">
                                         {el.label}
                                     </div>
                                 </div>
 
-                                <div className="flex bg-slate-800 p-2 rounded-xl">
+                                <div className="flex bg-[#0f1522] border border-[#2a374a] p-1 rounded-lg">
                                     <button 
-                                        className={`flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${el.active ? 'bg-sky-500 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                        className={`flex-1 py-2 rounded text-[9px] font-bold uppercase tracking-widest transition-colors ${el.active ? 'bg-[#1a2333] text-white border border-[#2a374a]' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
                                         onClick={() => updateProp(selectedElementIndex, 'active', true)}
                                     >Visível</button>
                                     <button 
-                                        className={`flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${!el.active ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                        className={`flex-1 py-2 rounded text-[9px] font-bold uppercase tracking-widest transition-colors ${!el.active ? 'bg-[#1a2333] text-white border border-[#2a374a]' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
                                         onClick={() => updateProp(selectedElementIndex, 'active', false)}
                                     >Oculto</button>
                                 </div>
@@ -263,25 +262,25 @@ export default function LabelDesigner() {
                                 {el.id !== 'qr' && (
                                     <>
                                         <div>
-                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Estilo da Fonte</label>
+                                            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Estilo da Fonte</label>
                                             <div className="flex gap-2">
                                                 <button 
                                                     onClick={() => updateProp(selectedElementIndex, 'bold', !el.bold)}
-                                                    className={`flex-1 p-3 border rounded-xl font-bold transition-colors ${el.bold ? 'bg-slate-700 border-sky-500 text-sky-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                                                    className={`flex-1 p-2.5 border rounded-lg font-bold text-[10px] uppercase tracking-widest transition-colors ${el.bold ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-[#0f1522] border-[#2a374a] text-slate-400 hover:text-white'}`}
                                                 >
-                                                    BOLD
+                                                    <i className="bi bi-type-bold mr-1"></i> Negrito
                                                 </button>
                                             </div>
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Alinhamento (Térmica)</label>
-                                            <div className="flex bg-slate-800 p-1 rounded-xl">
+                                            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Alinhamento (Térmica)</label>
+                                            <div className="flex bg-[#0f1522] border border-[#2a374a] p-1 rounded-lg">
                                                 {['left', 'center', 'right'].map(align => (
                                                     <button 
                                                         key={align}
                                                         onClick={() => updateProp(selectedElementIndex, 'align', align)}
-                                                        className={`flex-1 py-2 rounded-lg text-sm transition-colors ${el.align === align ? 'bg-slate-700 text-sky-400 shadow-md' : 'text-slate-400'}`}
+                                                        className={`flex-1 py-1.5 rounded text-sm transition-colors ${el.align === align ? 'bg-[#1a2333] text-blue-400 border border-[#2a374a]' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
                                                     >
                                                         <i className={`bi bi-text-${align}`}></i>
                                                     </button>
@@ -290,14 +289,14 @@ export default function LabelDesigner() {
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block flex justify-between">
-                                                <span>Tamanho (ESC/P)</span>
-                                                <span className="text-sky-400 font-mono">{el.size || 16}px</span>
-                                            </label>
+                                            <div className="flex justify-between items-center mb-2">
+                                              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Tamanho (ESC/P)</label>
+                                              <span className="text-blue-400 font-mono text-[10px] font-bold bg-blue-500/10 px-1.5 py-0.5 rounded">{el.size || 16}px</span>
+                                            </div>
                                             <input 
                                                 type="range" min="10" max="40" step="2" value={el.size || 16}
                                                 onChange={(e) => updateProp(selectedElementIndex, 'size', parseInt(e.target.value))}
-                                                className="w-full accent-sky-500"
+                                                className="w-full accent-blue-500"
                                             />
                                         </div>
                                     </>
@@ -305,40 +304,40 @@ export default function LabelDesigner() {
 
                                 {el.id === 'qr' && (
                                     <div>
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block flex justify-between">
-                                            <span>Dimensão do QRCode</span>
-                                            <span className="text-sky-400 font-mono">{el.size}mm</span>
-                                        </label>
+                                        <div className="flex justify-between items-center mb-2">
+                                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Dimensão do QRCode</label>
+                                          <span className="text-blue-400 font-mono text-[10px] font-bold bg-blue-500/10 px-1.5 py-0.5 rounded">{el.size}mm</span>
+                                        </div>
                                         <input 
                                             type="range" min="15" max="60" value={el.size}
                                             onChange={(e) => updateProp(selectedElementIndex, 'size', parseInt(e.target.value))}
-                                            className="w-full accent-sky-500"
+                                            className="w-full accent-blue-500"
                                         />
                                     </div>
                                 )}
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[#2a374a]">
                                     <div>
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Linha Y (Ordem)</label>
+                                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Eixo Y (Ordem)</label>
                                         <input 
                                             type="number" value={el.y}
                                             onChange={(e) => updateProp(selectedElementIndex, 'y', parseInt(e.target.value))}
-                                            className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl font-mono text-sm text-center"
+                                            className="w-full p-2.5 bg-[#0f1522] border border-[#2a374a] text-white rounded-lg font-mono text-xs text-center focus:border-blue-500 outline-none transition-colors"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Margem X (mm)</label>
+                                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Margem X (mm)</label>
                                         <input 
                                             type="number" value={el.x}
                                             onChange={(e) => updateProp(selectedElementIndex, 'x', parseInt(e.target.value))}
-                                            className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl font-mono text-sm text-center"
+                                            className="w-full p-2.5 bg-[#0f1522] border border-[#2a374a] text-white rounded-lg font-mono text-xs text-center focus:border-blue-500 outline-none transition-colors"
                                         />
                                     </div>
                                 </div>
 
                                 <button 
                                     onClick={() => setSelectedElementIndex(null)}
-                                    className="w-full p-4 bg-slate-800 text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all mt-6"
+                                    className="w-full p-3 bg-[#0f1522] border border-[#2a374a] text-slate-400 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:text-white hover:bg-[#2a374a] transition-all mt-4"
                                 >
                                     Concluído
                                 </button>

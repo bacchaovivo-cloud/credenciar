@@ -29,18 +29,48 @@ export function RegistrationPanel({ eventoAtivo, setoresEvento, categoria, setCa
     }
   };
 
+  const inputCls = "w-full p-2.5 bg-[#0f1522] border border-[#2a374a] text-white rounded-lg text-sm focus:border-blue-500 outline-none transition-colors placeholder:text-slate-600";
+  const labelCls = "text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block";
+
   return (
-    <div className="glass-card p-6 rounded-[2rem]">
-      <h3 className="font-bold mb-4">Cadastro Rápido</h3>
-      <form onSubmit={cadastrarIndividual} className="flex flex-col gap-3">
-        <input type="text" placeholder="Nome" value={novoNome} onChange={e => setNovoNome(e.target.value)} className="p-3 rounded-xl border" />
-        <input type="text" placeholder="CPF" value={novoCpf} onChange={e => setNovoCpf(e.target.value)} className="p-3 rounded-xl border focus:ring-2 focus:ring-sky-500 outline-none" />
-        <input type="text" placeholder="Telefone" value={novoTelefone} onChange={e => setNovoTelefone(e.target.value)} className="p-3 rounded-xl border focus:ring-2 focus:ring-sky-500 outline-none" />
-        <input type="email" placeholder="E-mail (Opcional)" value={novoEmail} onChange={e => setNovoEmail(e.target.value)} className="p-3 rounded-xl border focus:ring-2 focus:ring-sky-500 outline-none" />
-        <select value={categoria} onChange={e => setCategoria(e.target.value)} className="p-3 rounded-xl border bg-white outline-none cursor-pointer">
-            {setoresEvento.map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
-        </select>
-        <button type="submit" className="p-3 bg-sky-600 text-white rounded-xl font-bold shadow-md hover:bg-sky-700 transition">CADASTRAR</button>
+    <div className="bg-[#1a2333] border border-[#2a374a] p-6 rounded-xl flex flex-col h-full">
+      <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-5 flex items-center gap-2">
+        <i className="bi bi-person-plus-fill text-blue-500"></i> Cadastro Rápido
+      </h3>
+      <form onSubmit={cadastrarIndividual} className="flex flex-col gap-4 flex-1">
+        <div>
+          <label className={labelCls}>Nome Completo *</label>
+          <input type="text" placeholder="Ex: João da Silva" value={novoNome} onChange={e => setNovoNome(e.target.value)} className={inputCls} />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>CPF</label>
+            <input type="text" placeholder="000.000.000-00" value={novoCpf} onChange={e => setNovoCpf(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Telefone</label>
+            <input type="text" placeholder="(00) 00000-0000" value={novoTelefone} onChange={e => setNovoTelefone(e.target.value)} className={inputCls} />
+          </div>
+        </div>
+
+        <div>
+          <label className={labelCls}>E-mail (Opcional)</label>
+          <input type="email" placeholder="joao@email.com" value={novoEmail} onChange={e => setNovoEmail(e.target.value)} className={inputCls} />
+        </div>
+
+        <div>
+          <label className={labelCls}>Setor / Categoria</label>
+          <select value={categoria} onChange={e => setCategoria(e.target.value)} className={`${inputCls} cursor-pointer appearance-none`}>
+              {setoresEvento.map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
+          </select>
+        </div>
+
+        <div className="mt-auto pt-4">
+          <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-[11px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2">
+            <i className="bi bi-check2-circle text-sm"></i> Cadastrar Participante
+          </button>
+        </div>
       </form>
     </div>
   );
@@ -69,12 +99,39 @@ export function ImportZone({ eventoAtivo, categoria, exibirAlerta, setShowSmartI
     }
   };
 
+  const inputCls = "w-full p-3 bg-[#0f1522] border border-[#2a374a] text-white rounded-lg text-sm focus:border-blue-500 outline-none transition-colors placeholder:text-slate-600";
+
   return (
-    <div className="glass-card p-6 rounded-[2rem]">
-      <h3 className="font-bold mb-4">Importação Massa</h3>
-      <textarea value={nomesMassa} onChange={e => setNomesMassa(e.target.value)} placeholder="Nomes por linha..." className="w-full h-32 p-3 border rounded-xl resize-none mb-3 focus:ring-2 focus:ring-sky-500 outline-none" />
-      <button onClick={cadastrarEmMassa} className="w-full p-3 bg-slate-100 text-slate-800 rounded-xl font-bold mb-2 hover:bg-slate-200 transition">IMPORTAR TEXTO</button>
-      <button onClick={() => setShowSmartImport(true)} className="w-full p-3 bg-sky-500 text-white rounded-xl font-black shadow-lg shadow-sky-500/30 hover:bg-sky-600 transition">SMART IMPORT (EXCEL)</button>
+    <div className="bg-[#1a2333] border border-[#2a374a] p-6 rounded-xl flex flex-col h-full">
+      <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-5 flex items-center gap-2">
+        <i className="bi bi-file-earmark-arrow-up-fill text-emerald-500"></i> Importação em Massa
+      </h3>
+      
+      <div className="flex-1 flex flex-col">
+        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">
+          Cole os dados (Nome, CPF, Telefone)
+        </label>
+        <textarea 
+          value={nomesMassa} 
+          onChange={e => setNomesMassa(e.target.value)} 
+          placeholder="João Silva, 12345678900, 11999999999&#10;Maria Souza, 09876543211, 11888888888" 
+          className={`${inputCls} flex-1 min-h-[120px] resize-none mb-4 font-mono text-xs`} 
+        />
+        
+        <button 
+          onClick={cadastrarEmMassa} 
+          className="w-full py-3 mb-3 bg-[#0f1522] border border-[#2a374a] hover:bg-[#2a374a] text-slate-300 hover:text-white rounded-lg font-bold text-[11px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
+        >
+          <i className="bi bi-input-cursor-text"></i> Importar Texto
+        </button>
+        
+        <button 
+          onClick={() => setShowSmartImport(true)} 
+          className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[11px] uppercase tracking-widest shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+        >
+          <i className="bi bi-file-earmark-excel-fill text-sm"></i> Smart Import (Excel/CSV)
+        </button>
+      </div>
     </div>
   );
 }

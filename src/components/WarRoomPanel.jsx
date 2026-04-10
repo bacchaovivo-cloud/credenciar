@@ -2,126 +2,129 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * ⚡ WAR ROOM PANEL (Elite UI Component)
+ * ⚡ WAR ROOM PANEL (Bento Box UI)
  * Centraliza o monitoramento de Hardware e Segurança Forense.
  */
-export const WarRoomPanel = ({ 
+const WarRoomPanel = ({ 
   ultimos = [], 
   anomaliasRecentes = [], 
   printerAlert = null, 
   onReimprimir, 
-  corPrimaria = '#0ea5e9' 
+  corPrimaria = '#3b82f6' 
 }) => {
   const [fullScreen, setFullScreen] = React.useState(false);
 
   return (
-    <div className={`${fullScreen ? 'fixed inset-0 z-[1000] p-10 mesh-gradient animate-in overflow-y-auto' : 'bg-white dark:bg-slate-800 p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors'}`}>
-      <div className="flex justify-between items-center mb-10">
+    <div className={`${fullScreen ? 'fixed inset-0 z-[1000] p-6 md:p-10 bg-[#0f1522] overflow-y-auto' : 'bg-[#1a2333] p-6 rounded-xl border border-[#2a374a] transition-colors flex flex-col h-full'}`}>
+      
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h3 className={`font-bold flex items-center gap-3 ${fullScreen ? 'text-4xl text-white tracking-tighter' : 'text-xl text-slate-800 dark:text-slate-100'}`}>
-            <i className={`bi bi-lightning-charge-fill animate-pulse ${fullScreen ? 'text-sky-400' : 'text-amber-500'}`}></i> 
-            War Room: Monitoramento Ativo
+          <h3 className={`font-bold flex items-center gap-2 ${fullScreen ? 'text-2xl text-white tracking-tight uppercase' : 'text-sm text-white uppercase tracking-wider'}`}>
+            <i className={`bi bi-lightning-charge-fill animate-pulse ${fullScreen ? 'text-blue-500' : 'text-amber-500'}`}></i> 
+            War Room: Ativo
           </h3>
-          {fullScreen && <p className="text-sky-400/60 font-black uppercase tracking-[0.3em] text-[10px] mt-2 ml-12">Zenith Intelligence System — Live Feed</p>}
+          {fullScreen && <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1 ml-7">Zenith Intelligence System — Live Feed</p>}
         </div>
 
-        <div className="flex items-center gap-4">
-          <span className={`text-xs font-bold py-1.5 px-3 rounded-full border flex items-center gap-1.5 ${fullScreen ? 'bg-white/10 border-white/20 text-white' : 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/30'}`}>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+        <div className="flex items-center gap-3">
+          <span className={`text-[9px] font-bold py-1 px-2 rounded flex items-center gap-1.5 uppercase tracking-widest border ${fullScreen ? 'bg-[#1a2333] border-[#2a374a] text-blue-400' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${fullScreen ? 'bg-blue-500' : 'bg-emerald-500'} animate-pulse`}></span>
             LIVE
           </span>
           <button 
             onClick={() => setFullScreen(!fullScreen)}
-            className={`p-3 rounded-2xl transition-all ${fullScreen ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200'}`}
+            className={`w-8 h-8 rounded border flex items-center justify-center transition-colors ${fullScreen ? 'bg-[#1a2333] border-[#2a374a] text-slate-400 hover:text-white' : 'bg-[#0f1522] border-[#2a374a] text-slate-400 hover:text-white'}`}
             title={fullScreen ? "Sair do Full Screen" : "Expandir War Room"}
           >
-            <i className={`bi ${fullScreen ? 'bi-fullscreen-exit' : 'bi-fullscreen'} text-xl`}></i>
+            <i className={`bi ${fullScreen ? 'bi-fullscreen-exit' : 'bi-fullscreen'} text-sm`}></i>
           </button>
         </div>
       </div>
       
-      <div className={`grid gap-4 ${fullScreen ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'flex flex-col'}`}>
+      <div className={`grid gap-4 ${fullScreen ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'flex flex-col flex-1'}`}>
         <AnimatePresence initial={false}>
-          {/* [ELITE] HARDWARE MONITOR */}
+          
+          {/* HARDWARE MONITOR */}
           {printerAlert && (
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-6 bg-red-600 border-2 border-red-500 rounded-[2.5rem] text-white shadow-2xl shadow-red-500/40 flex items-center justify-between"
+              className={`p-4 bg-red-500/10 border-l-4 border-red-500 rounded-lg text-red-400 flex items-center justify-between ${fullScreen ? 'col-span-full' : ''}`}
             >
-              <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                    <i className="bi bi-printer-fill text-2xl animate-bounce"></i>
+              <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 bg-red-500/20 border border-red-500/30 rounded flex items-center justify-center">
+                    <i className="bi bi-printer-fill text-lg animate-pulse"></i>
                  </div>
                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Hardware Failure</p>
-                    <p className="text-lg font-black uppercase tracking-tighter leading-none mt-1">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-red-500/70 mb-0.5">Hardware Failure</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-red-400">
                       {printerAlert.status === 'PAPER_OUT' ? 'Impressora sem Papel!' : 
                        printerAlert.status === 'COVER_OPEN' ? 'Tampa Aberta!' : 
                        'Falha de Conexão!'}
                     </p>
                  </div>
               </div>
-              <i className="bi bi-exclamation-triangle-fill text-3xl opacity-20"></i>
+              <i className="bi bi-exclamation-triangle-fill text-2xl opacity-20"></i>
             </motion.div>
           )}
 
-          {/* [ENTERPRISE] ANOMALY WAR ROOM */}
+          {/* ANOMALY WAR ROOM */}
           {anomaliasRecentes && anomaliasRecentes.length > 0 && (
-            <div className={`p-6 border-2 border-orange-500/30 rounded-[2.5rem] ${fullScreen ? 'bg-white/5 backdrop-blur-md' : 'bg-orange-500/10'} animate-pulse`}>
-              <h4 className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <i className="bi bi-shield-fill-exclamation text-lg"></i> Alertas de Segurança
+            <div className={`p-4 border border-orange-500/30 rounded-lg bg-orange-500/10 ${fullScreen ? 'col-span-full' : ''}`}>
+              <h4 className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                <i className="bi bi-shield-fill-exclamation text-base animate-pulse"></i> Alertas de Segurança
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {anomaliasRecentes.slice(0, 3).map((anom, i) => (
-                  <div key={anom.id || i} className="flex justify-between items-center bg-orange-500/10 p-3 rounded-2xl text-[11px] font-bold text-orange-700 dark:text-orange-400 border border-orange-500/10">
-                     <span className="truncate flex-1">{anom.convidado_nome} ({anom.categoria})</span>
-                     <span className="font-mono opacity-60 ml-2">CRITICAL</span>
+                  <div key={anom.id || i} className="flex justify-between items-center bg-[#0f1522] p-2.5 rounded border border-orange-500/20 text-[10px] font-bold text-orange-400 uppercase tracking-widest">
+                     <span className="truncate flex-1">{anom.convidado_nome} <span className="opacity-60">({anom.categoria})</span></span>
+                     <span className="font-mono text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded">CRITICAL</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
+          {/* LATEST CHECK-INS (LIVE FEED) */}
           {ultimos.length > 0 ? ultimos.map((p, i) => {
             const isVIP = ['VIP', 'DIAMANTE', 'COORD', 'DIRETORIA', 'PATROCINADOR'].includes(p.categoria?.toUpperCase());
             return (
               <motion.div 
                 key={p.id || i}
-                initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5, filter: 'blur(10px)' }}
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                className={`flex justify-between items-center p-5 rounded-[2.5rem] border transition-all hover:scale-[1.02] ${fullScreen ? 'glass-card-premium text-white' : (isVIP ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/50' : 'bg-slate-50 dark:bg-slate-700/50 border-slate-100 dark:border-slate-600')}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className={`flex justify-between items-center p-3 rounded-lg border transition-all hover:bg-[#2a374a] group ${isVIP ? 'bg-amber-500/5 border-amber-500/30' : 'bg-[#0f1522] border-[#2a374a]'}`}
               >
-                <div className="flex items-center gap-5">
-                  <div className={`w-14 h-14 rounded-[1.2rem] flex items-center justify-center text-white font-black text-2xl relative shadow-lg ${isVIP ? 'animate-float' : ''}`} 
-                     style={{ backgroundColor: isVIP ? '#f59e0b' : (fullScreen ? 'rgba(255,255,255,0.1)' : corPrimaria) }}>
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className={`w-10 h-10 shrink-0 rounded flex items-center justify-center text-white font-bold text-lg relative ${isVIP ? 'bg-amber-500' : 'bg-[#1a2333] border border-[#2a374a]'}`} 
+                      style={{ backgroundColor: !isVIP && corPrimaria ? `${corPrimaria}40` : undefined, color: !isVIP && corPrimaria ? corPrimaria : undefined, borderColor: !isVIP && corPrimaria ? corPrimaria : undefined }}>
                     {p.nome.charAt(0).toUpperCase()}
-                    {isVIP && <span className="absolute -top-2 -right-2 text-base">👑</span>}
+                    {isVIP && <span className="absolute -top-1.5 -right-1.5 text-xs">⭐</span>}
                   </div>
-                  <div>
-                    <strong className={`text-lg block tracking-tight ${fullScreen ? 'text-white' : (isVIP ? 'text-amber-700 dark:text-amber-400' : 'text-slate-900 dark:text-white')}`}>
+                  <div className="min-w-0">
+                    <strong className={`text-xs block tracking-wide truncate uppercase ${isVIP ? 'text-amber-400' : 'text-white'}`}>
                       {p.nome}
                     </strong>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${fullScreen ? 'text-sky-400' : 'text-slate-500'}`}>{p.categoria}</span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 truncate">{p.categoria}</span>
                       {isVIP && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>}
                     </div>
                   </div>
                 </div>
                 <button 
                   onClick={() => onReimprimir(p)}
-                  className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all ${fullScreen ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-400 hover:text-sky-500'}`}
+                  className="w-8 h-8 shrink-0 flex items-center justify-center rounded border border-[#2a374a] bg-[#1a2333] text-slate-400 hover:text-white hover:border-blue-500 transition-colors opacity-0 group-hover:opacity-100"
+                  title="Reimprimir Etiqueta"
                 >
-                  <i className="bi bi-printer-fill text-xl"></i>
+                  <i className="bi bi-printer-fill text-xs"></i>
                 </button>
               </motion.div>
             );
           }) : (
-            <div className={`text-center py-20 w-full col-span-full ${fullScreen ? 'text-white/30' : 'text-slate-300'}`}>
-              <i className="bi bi-qr-code text-6xl block mb-6 animate-pulse"></i>
-              <p className="text-sm font-black uppercase tracking-[0.3em]">Aguardando Fluxo de Entrada...</p>
+            <div className={`text-center py-10 w-full flex flex-col items-center justify-center border border-dashed border-[#2a374a] rounded-lg ${fullScreen ? 'col-span-full h-64' : 'flex-1'}`}>
+              <i className="bi bi-qr-code text-3xl text-slate-600 mb-3 animate-pulse"></i>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Aguardando Fluxo de Entrada...</p>
             </div>
           )}
         </AnimatePresence>
@@ -129,3 +132,5 @@ export const WarRoomPanel = ({
     </div>
   );
 };
+
+export default WarRoomPanel;

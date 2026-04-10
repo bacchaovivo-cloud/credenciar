@@ -9,7 +9,6 @@ import confetti from 'canvas-confetti';
 import Fuse from 'fuse.js';
 import { motion, AnimatePresence } from 'framer-motion';
 
-
 // Components
 import Menu from '../components/Menu';
 import FaceRegistrationModal from '../components/FaceRegistrationModal';
@@ -37,8 +36,6 @@ import { useGuestActions } from '../hooks/useGuestActions';
 import React, { Suspense } from 'react';
 
 const FaceScanner = React.lazy(() => import('../components/FaceScanner'));
-
-
 
 export default function Convidados() {
   const { 
@@ -106,6 +103,7 @@ export default function Convidados() {
     setFlash,
     setCheckinStatus
   });
+
   // --- ZENITH EDGE: AUTO-SYNC ---
   useEffect(() => {
     if (isOnline && isModoEdge) {
@@ -113,7 +111,7 @@ export default function Convidados() {
         setEdgeSyncing(true);
         await ZenithEdge.sincronizar(apiRequest);
         setEdgeSyncing(false);
-      }, 30000); // Tenta sincronizar a cada 30s
+      }, 30000); 
       return () => clearInterval(interval);
     }
   }, [isOnline, isModoEdge]);
@@ -121,7 +119,7 @@ export default function Convidados() {
   const entrarModoEdge = async () => {
     try {
       setMsg({ texto: '🔋 ATIVANDO MOTOR ZENITH EDGE...', tipo: 'INFO' });
-      const res = await apiRequest(`convidados/${eventoAtivo}?limit=2000`); // Baixa o grosso do evento
+      const res = await apiRequest(`convidados/${eventoAtivo}?limit=2000`); 
       if (res.success) {
         await ZenithEdge.persistirEvento(eventoAtivo, res.dados);
         setIsModoEdge(true);
@@ -134,13 +132,12 @@ export default function Convidados() {
 
   const searchInputRef = useRef(null);
   const focusIntervalRef = useRef(null);
-  const timerRef = useRef(null);
 
   const POR_PAGINA = 50;
   const safeRole = (role || '').trim().toUpperCase();
 
   // --- CUSTOM HOOKS ---
-  const { convidados, isLoading, paginacaoServidor, diasEvento, eventoInfo } = useGuestData({
+  const { convidados, isLoading, paginacaoServidor, diasEvento } = useGuestData({
     eventoAtivo,
     isOnline,
     pagina,
@@ -170,9 +167,6 @@ export default function Convidados() {
       }
   };
 
-  // Fix #16: Sync j\u00e1 \u00e9 gerenciado globalmente pelo AppContext (listener window.online)
-  // Removida chamada duplicada que causava double-sync
-
   useEffect(() => {
     if (role === 'ADMIN') {
       apiRequest('eventos').then(res => {
@@ -180,8 +174,6 @@ export default function Convidados() {
       });
     }
   }, [role]);
-
-
 
   const fetchStats = async () => {
     if (!eventoAtivo || !isOnline) return;
@@ -241,10 +233,6 @@ export default function Convidados() {
     }
   };
 
-  // --- AÇÕES ---
-  // Removemos a função local fazerCheckin
-  // Pois agora está no hook useCheckinFlow.
-
   const handleExportar = async () => {
     try {
       const token = localStorage.getItem('userToken');
@@ -266,17 +254,6 @@ export default function Convidados() {
     const toastType = tipo === 'sucesso' ? 'success' : tipo === 'erro' ? 'error' : 'info';
     toast(texto, { type: toastType });
   };
-
-  const syncOfflineCheckins = async () => {
-    exibirAlerta(`🔄 Sincronizando Zenith Edge...`, 'sucesso');
-    const res = await ZenithEdge.sincronizar(apiRequest);
-    if (res.success) {
-        exibirAlerta(`✅ ${res.total} registros sincronizados!`, 'sucesso');
-        queryClient.invalidateQueries(['convidados', eventoAtivo]);
-    }
-  };
-
-
 
   const abrirModalQR = async (nome, qrcode) => {
     try {
@@ -322,7 +299,7 @@ export default function Convidados() {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 relative ${flash ? `ring-[20px] ring-${flash === 'success' ? 'emerald' : 'red'}-500/20 ring-inset` : ''}`}>
+    <div className={`min-h-screen bg-[#0f1522] text-slate-300 font-sans transition-colors duration-300 relative ${flash ? `ring-[10px] ring-${flash === 'success' ? 'emerald' : 'red'}-500/40 ring-inset` : ''}`}>
       
       <CheckinHUD modoEvento={isModoEvento} eventStats={eventStats} latency={latency} queueStatus={queueStatus} />
       
@@ -342,90 +319,90 @@ export default function Convidados() {
 
       <QRCodeModal isOpen={qrModal.ativo} qrData={qrModal} onClose={() => setQrModal({ ativo: false })} />
 
-      <div className="pt-20 p-4 md:p-8 max-w-[1450px] mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 glass-card p-4 md:p-8 rounded-[2rem] gap-4">
+      <div className="pt-24 pb-12 px-4 md:px-8 max-w-[1400px] mx-auto">
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 bg-[#1a2333] border border-[#2a374a] p-5 md:p-6 rounded-xl gap-4">
           <div>
-            <h2 className="text-xl md:text-2xl font-bold">Portaria Virtual Pro</h2>
-            <p className="text-slate-500 text-sm">{role === 'ADMIN' ? 'Gestão Corporativa' : 'Alta Performance'}</p>
+            <h2 className="text-xl md:text-2xl font-bold text-white">Portaria Virtual Pro</h2>
+            <p className="text-slate-400 text-xs mt-0.5">{role === 'ADMIN' ? 'Gestão Corporativa' : 'Alta Performance'}</p>
           </div>
           
-          <div className="flex flex-col gap-3 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full xl:w-auto items-start sm:items-center">
              {/* ZENITH POWER: AI FLOW & EDGE RESILIENCE */}
              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-sky-500/5 border border-sky-500/10 rounded-xl">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0f1522] border border-[#2a374a] rounded-lg">
                    <div className="flex flex-col items-end">
-                      <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Fluxo AI</span>
-                      <span className="text-sm font-black text-sky-500 leading-none">{aiMetrics?.velocity || '0.0'} <span className="text-[8px]">P/M</span></span>
+                      <span className="text-[8px] font-bold uppercase text-slate-500 tracking-widest">Fluxo AI</span>
+                      <span className="text-sm font-black text-blue-500 leading-none">{aiMetrics?.velocity || '0.0'} <span className="text-[8px] font-bold">P/M</span></span>
                    </div>
                 </div>
 
-                <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>
+                <div className="h-8 w-px bg-[#2a374a] hidden sm:block"></div>
 
                 <button 
                   onClick={entrarModoEdge}
                   disabled={isModoEdge}
-                  className={`h-11 px-4 rounded-xl flex items-center gap-2 transition-all ${isModoEdge ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'}`}
+                  className={`h-10 px-4 rounded-lg flex items-center gap-2 transition-all border ${isModoEdge ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-[#0f1522] border-[#2a374a] text-slate-400 hover:text-white hover:bg-[#2a374a]'}`}
                 >
                   <i className={`bi ${edgeSyncing ? 'bi-arrow-repeat animate-spin' : (isModoEdge ? 'bi-shield-check' : 'bi-lightning-charge-fill')}`}></i>
-                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">{isModoEdge ? 'Edge Ativo' : 'Zenith Edge'}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest leading-none">{isModoEdge ? 'Edge Ativo' : 'Zenith Edge'}</span>
                 </button>
 
-                <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>
+                <div className="h-8 w-px bg-[#2a374a] hidden sm:block"></div>
 
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <div className={`w-2 h-2 rounded-full ${printerConfig.ip ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                    <span className="text-[10px] font-black text-slate-500 uppercase leading-none">Impr: {printerConfig.ip ? 'OK' : 'OFF'}</span>
+                <div className="flex items-center gap-2 px-3 py-2 bg-[#0f1522] rounded-lg border border-[#2a374a]">
+                    <div className={`w-2 h-2 rounded-full ${printerConfig.ip ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`}></div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">Impr: {printerConfig.ip ? 'OK' : 'OFF'}</span>
                 </div>
              </div>
 
-             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>
+             <div className="h-8 w-px bg-[#2a374a] hidden xl:block"></div>
 
              {/* Ações de Gestão */}
-             <div className="grid grid-cols-4 sm:flex gap-2">
+             <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
                 <button 
                   onClick={handleExportar} 
                   title="Relatório CSV"
-                  className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 transition-all active:scale-95"
+                  className="p-2.5 bg-[#0f1522] border border-[#2a374a] text-slate-400 rounded-lg hover:text-white hover:bg-[#2a374a] transition-all"
                 >
                   <i className="bi bi-filetype-csv text-lg"></i>
                 </button>
                 <button 
                   onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/convidados/${eventoAtivo}/exportar-xlsx?token=${localStorage.getItem('userToken')}`, '_blank')}
                   title="Relatório Excel (Pro)"
-                  className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all active:scale-95"
+                  className="p-2.5 bg-[#0f1522] border border-[#2a374a] text-emerald-500 rounded-lg hover:bg-emerald-500/10 transition-all"
                 >
                   <i className="bi bi-file-earmark-excel text-lg"></i>
                 </button>
                 <button 
                   onClick={() => navigate(`/kiosk/${eventoAtivo}`)}
                   title="Modo Kiosk (Totem de Consulta)"
-                  className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-500 rounded-xl hover:bg-indigo-50 transition-all active:scale-95"
+                  className="p-2.5 bg-[#0f1522] border border-[#2a374a] text-indigo-400 rounded-lg hover:bg-indigo-500/10 transition-all"
                 >
                   <i className="bi bi-display text-lg"></i>
                 </button>
                 <button 
                   onClick={() => navigate(`/totem/${eventoAtivo}`)}
                   title="Modo Auto-Checkin (Totem Entrada)"
-                  className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-emerald-500 rounded-xl hover:bg-emerald-50 transition-all active:scale-95"
+                  className="p-2.5 bg-[#0f1522] border border-[#2a374a] text-emerald-400 rounded-lg hover:bg-emerald-500/10 transition-all"
                 >
                   <i className="bi bi-person-badge-fill text-lg"></i>
                 </button>
                 <button 
                   onClick={() => navigate(`/sorteios/${eventoAtivo}`)}
                   title="Realizar Sorteio"
-                  className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-amber-500 rounded-xl hover:bg-amber-50 transition-all active:scale-95"
+                  className="p-2.5 bg-[#0f1522] border border-[#2a374a] text-amber-400 rounded-lg hover:bg-amber-500/10 transition-all"
                 >
                   <i className="bi bi-trophy text-lg"></i>
                 </button>
              </div>
 
-             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>
+             <div className="h-8 w-px bg-[#2a374a] hidden xl:block"></div>
 
-             <button onClick={() => setIsModoEvento(!isModoEvento)} className={`px-6 py-2.5 rounded-xl border text-[11px] font-black uppercase transition-all shadow-sm ${isModoEvento ? 'bg-indigo-600 border-indigo-700 text-white ring-4 ring-indigo-500/20' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-500'}`}>
+             <button onClick={() => setIsModoEvento(!isModoEvento)} className={`px-5 py-2.5 rounded-lg border text-[11px] font-bold uppercase transition-all whitespace-nowrap ${isModoEvento ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-[#0f1522] text-slate-300 border-[#2a374a] hover:border-indigo-500 hover:text-white'}`}>
                 {isModoEvento ? (
                   <span className="flex items-center gap-2"><i className="bi bi-x-circle-fill"></i> Sair do Modo Evento</span>
                 ) : (
-                  <span className="flex items-center gap-2"><i className="bi bi-lightning-charge-fill text-amber-500"></i> Ativar Modo Evento</span>
+                  <span className="flex items-center gap-2"><i className="bi bi-lightning-charge-fill text-amber-500"></i> Modo Evento</span>
                 )}
              </button>
 
@@ -433,7 +410,7 @@ export default function Convidados() {
                <select 
                  value={eventoAtivo} 
                  onChange={(e) => setEventoAtivo(e.target.value)} 
-                 className="py-2.5 px-4 rounded-xl border-2 border-sky-500 font-bold bg-white dark:bg-slate-900 dark:text-white outline-none cursor-pointer hover:shadow-lg hover:shadow-sky-500/20 transition-all"
+                 className="py-2.5 px-3 rounded-lg border border-[#2a374a] text-xs font-bold bg-[#0f1522] text-white outline-none cursor-pointer focus:border-blue-500 transition-all"
                >
                  <option value="">Selecionar Evento...</option>
                  {eventos.map(ev => <option key={ev.id} value={ev.id}>{ev.nome}</option>)}
@@ -444,38 +421,38 @@ export default function Convidados() {
 
         {eventoAtivo ? (
           isModoEvento ? (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-12">
-                <div className="relative w-full max-w-4xl">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">
+                <div className="relative w-full max-w-3xl">
                     {/* Seleção de Método de Entrada */}
-                    <div className="flex gap-4 mb-8 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-3xl">
+                    <div className="flex gap-2 mb-6 bg-[#0f1522] border border-[#2a374a] p-1.5 rounded-xl">
                         <button 
                             onClick={() => setModoBiometria(false)}
-                            className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${!modoBiometria ? 'bg-white dark:bg-slate-700 shadow-xl text-sky-500' : 'text-slate-400'}`}
+                            className={`flex-1 py-3 rounded-lg font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${!modoBiometria ? 'bg-[#1a2333] border border-[#2a374a] text-blue-400' : 'text-slate-500 hover:text-slate-300'}`}
                         >
-                            <i className="bi bi-qr-code-scan text-2xl"></i>
+                            <i className="bi bi-qr-code-scan text-xl"></i>
                             QR Code
                         </button>
                         <button 
                             onClick={() => setModoBiometria(true)}
-                            className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${modoBiometria ? 'bg-white dark:bg-slate-700 shadow-xl text-sky-500' : 'text-slate-400'}`}
+                            className={`flex-1 py-3 rounded-lg font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${modoBiometria ? 'bg-[#1a2333] border border-[#2a374a] text-blue-400' : 'text-slate-500 hover:text-slate-300'}`}
                         >
-                            <i className="bi bi-person-bounding-box text-2xl"></i>
+                            <i className="bi bi-person-bounding-box text-xl"></i>
                             FaceID (Zenith)
                         </button>
                     </div>
 
-                    <div className="relative group bg-slate-100 dark:bg-slate-800 rounded-[4rem] overflow-hidden border-4 border-slate-200 dark:border-slate-700 p-6 min-h-[400px] flex items-center justify-center">
+                    <div className="relative group bg-[#0f1522] rounded-2xl overflow-hidden border border-[#2a374a] p-6 min-h-[400px] flex items-center justify-center shadow-2xl">
                         {modoBiometria ? (
-                            <Suspense fallback={<div className="flex flex-col items-center gap-4"><div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div><span className="text-sky-500 font-bold uppercase tracking-widest text-xs">Carregando IA Facial...</span></div>}>
+                            <Suspense fallback={<div className="flex flex-col items-center gap-4"><div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div><span className="text-blue-500 font-bold uppercase tracking-widest text-xs">Carregando IA Facial...</span></div>}>
                                 <FaceScanner onScan={handleFaceDetected} />
                             </Suspense>
                         ) : (
-                            <div className="w-full max-w-md">
+                            <div className="w-full max-w-sm">
                                 <Scanner onScan={(res) => res && res[0]?.rawValue && fazerCheckin(res[0].rawValue)} />
                             </div>
                         )}
-                        <div className="absolute inset-x-8 bottom-8 flex justify-center z-50">
-                            <div className="px-6 py-3 bg-black/60 backdrop-blur-xl rounded-full text-white text-xs font-black uppercase tracking-widest flex items-center gap-3">
+                        <div className="absolute inset-x-8 bottom-6 flex justify-center z-50">
+                            <div className="px-5 py-2 bg-[#1a2333]/90 border border-[#2a374a] backdrop-blur-md rounded-full text-white text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg">
                                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
                                 {modoBiometria ? 'IA BioCore Pronta' : 'Aguardando QR Code'}
                             </div>
@@ -486,7 +463,7 @@ export default function Convidados() {
                         ref={searchInputRef}
                         type="text"
                         placeholder="OU DIGITE O CÓDIGO..."
-                        className="w-full mt-8 py-8 px-12 bg-white dark:bg-slate-800 border-[6px] border-slate-200 dark:border-slate-700 rounded-[40px] text-3xl font-black focus:outline-none focus:border-sky-500 transition-all uppercase"
+                        className="w-full mt-6 py-5 px-8 bg-[#1a2333] border border-[#2a374a] rounded-xl text-2xl font-black text-white focus:outline-none focus:border-blue-500 transition-all uppercase placeholder:text-slate-600 text-center"
                         onChange={(e) => setBusca(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && e.target.value) {
@@ -496,44 +473,48 @@ export default function Convidados() {
                         }}
                     />
                 </div>
-               <button onClick={() => setIsModoEvento(false)} className="px-8 py-4 bg-red-50 text-red-600 rounded-3xl font-black">SAIR DO MODO EVENTO</button>
+               <button onClick={() => setIsModoEvento(false)} className="px-6 py-3 border border-red-500/20 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-colors rounded-xl text-xs font-bold uppercase tracking-widest">
+                  SAIR DO MODO EVENTO
+               </button>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row gap-3">
                  <div className="relative flex-1 group">
                   <input 
                     type="text" placeholder="Pesquisar por Nome, CPF ou E-mail..." 
                     value={busca} onChange={e => setBusca(e.target.value)}
-                    className={`w-full p-4 pl-12 rounded-2xl border transition-all outline-none focus:ring-4 ${isFuzzyMode ? 'border-sky-400 ring-sky-500/10' : 'border-slate-200 focus:ring-sky-500'}`}
+                    className={`w-full p-4 pl-12 rounded-xl bg-[#1a2333] border transition-all outline-none text-white placeholder:text-slate-500 ${isFuzzyMode ? 'border-blue-500/50 focus:border-blue-500' : 'border-[#2a374a] focus:border-blue-500'}`}
                   />
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-500">
-                    <i className={`bi ${isFuzzyMode ? 'bi-stars animate-pulse text-sky-500' : 'bi-search'}`}></i>
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500">
+                    <i className={`bi ${isFuzzyMode ? 'bi-stars animate-pulse text-blue-500' : 'bi-search'}`}></i>
                   </div>
                   <button 
                     onClick={() => setIsFuzzyMode(!isFuzzyMode)}
                     title={isFuzzyMode ? "Busca Inteligente Ativa" : "Ativar Busca Inteligente (Fuzzy)"}
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${isFuzzyMode ? 'bg-sky-500 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded bg-[#0f1522] border border-[#2a374a] text-[9px] font-bold uppercase tracking-widest transition-all ${isFuzzyMode ? 'text-blue-400 border-blue-500/30' : 'text-slate-500 hover:text-slate-300'}`}
                   >
                     {isFuzzyMode ? 'Smart ON' : 'Smart OFF'}
                   </button>
                  </div>
-                  <button onClick={() => setCamera(!camera)} className="p-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 sm:w-auto">
-                    <i className={`bi ${camera ? 'bi-x-lg' : 'bi-camera-fill'}`}></i>
-                    <span className="text-xs uppercase tracking-widest">{camera ? 'FECHAR' : 'SCANNER'}</span>
+                  <button onClick={() => setCamera(!camera)} className="px-6 py-4 bg-[#1a2333] border border-[#2a374a] text-white hover:bg-[#2a374a] transition-colors rounded-xl font-bold flex items-center justify-center gap-2 sm:w-auto">
+                    <i className={`bi ${camera ? 'bi-x-lg text-red-400' : 'bi-camera-fill'}`}></i>
+                    <span className="text-[10px] uppercase tracking-widest">{camera ? 'FECHAR' : 'SCANNER'}</span>
                   </button>
                 </div>
 
                 {camera && (
-                  <div className="max-w-[400px] mx-auto rounded-3xl overflow-hidden border-8 border-slate-900 shadow-2xl">
-                    <Scanner onScan={(res) => res && res[0]?.rawValue && fazerCheckin(res[0].rawValue)} />
+                  <div className="max-w-[400px] mx-auto rounded-xl overflow-hidden border border-[#2a374a] bg-[#1a2333] p-2 shadow-2xl">
+                    <div className="rounded-lg overflow-hidden">
+                      <Scanner onScan={(res) => res && res[0]?.rawValue && fazerCheckin(res[0].rawValue)} />
+                    </div>
                   </div>
                 )}
 
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                   {['TODOS', ...setoresEvento.map(s => s.nome)].map(cat => (
-                    <button key={cat} onClick={() => setFiltroCategoria(cat)} className={`py-2 px-5 rounded-xl font-bold text-sm ${filtroCategoria === cat ? 'bg-sky-500 text-white' : 'bg-white text-slate-600 border'}`}>
+                    <button key={cat} onClick={() => setFiltroCategoria(cat)} className={`py-1.5 px-4 rounded-lg font-bold text-[11px] whitespace-nowrap transition-colors ${filtroCategoria === cat ? 'bg-blue-600 text-white border border-blue-500' : 'bg-[#1a2333] text-slate-400 border border-[#2a374a] hover:text-white hover:bg-[#2a374a]'}`}>
                       {cat}
                     </button>
                   ))}
@@ -585,48 +566,48 @@ export default function Convidados() {
                 )}
               </div>
 
-              {/* TOOLBAR DE AÇÕES EM MASSA (ENTERPRISE UI) */}
+              {/* TOOLBAR DE AÇÕES EM MASSA */}
               <AnimatePresence>
                 {selectedIds.length > 0 && (
                   <motion.div 
                     initial={{ y: 100, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 100, opacity: 0 }}
-                    className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-2xl"
+                    className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-2xl"
                   >
-                    <div className="bg-slate-900 border-2 border-sky-500/30 p-4 rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] flex items-center justify-between backdrop-blur-xl">
-                       <div className="flex items-center gap-4 text-white pl-2">
-                          <div className="w-12 h-12 rounded-2xl bg-sky-500 flex items-center justify-center font-black text-xl shadow-lg shadow-sky-500/20">
+                    <div className="bg-[#1a2333] border border-[#2a374a] p-3 rounded-xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                       <div className="flex items-center gap-4 text-white pl-2 w-full sm:w-auto justify-center sm:justify-start">
+                          <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center font-black text-lg">
                              {selectedIds.length}
                           </div>
                           <div>
-                             <h4 className="text-sm font-black uppercase tracking-tight">Selecionados</h4>
-                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ações em Lote Ativas</p>
+                             <h4 className="text-[11px] font-bold uppercase tracking-wider text-white">Selecionados</h4>
+                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Ações em Lote Ativas</p>
                           </div>
                        </div>
 
-                       <div className="flex gap-2">
+                       <div className="flex flex-wrap justify-center sm:justify-end gap-2 w-full sm:w-auto">
                           <button 
                             disabled={isBulkProcessing}
                             onClick={() => executarAcaoEmMassa('checkin')}
-                            className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black uppercase transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-emerald-900/40"
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-2"
                           >
-                            <i className="bi bi-person-check-fill"></i> {isBulkProcessing ? 'PROCESSANDO...' : 'Check-in Lote'}
+                            <i className="bi bi-person-check-fill"></i> {isBulkProcessing ? 'PROCESSANDO...' : 'Check-in'}
                           </button>
                           
                           {(userPermissions.guests_delete || safeRole === 'ADMIN') && (
                             <button 
                               disabled={isBulkProcessing}
                               onClick={() => executarAcaoEmMassa('delete')}
-                              className="px-5 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl text-xs font-black uppercase transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-rose-900/40"
+                              className="px-4 py-2 border border-red-500/30 bg-red-500/10 hover:bg-red-500 hover:text-white text-red-400 rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-2"
                             >
-                              <i className="bi bi-trash3-fill"></i> Excluir Lote
+                              <i className="bi bi-trash3-fill"></i> Excluir
                             </button>
                           )}
 
                           <button 
                             onClick={() => setSelectedIds([])}
-                            className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl text-xs font-black uppercase transition-all"
+                            className="px-4 py-2 bg-[#0f1522] border border-[#2a374a] hover:bg-[#2a374a] text-slate-300 rounded-lg text-[10px] font-bold uppercase transition-all"
                           >
                             Cancelar
                           </button>
@@ -636,7 +617,7 @@ export default function Convidados() {
                 )}
               </AnimatePresence>
 
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4 mt-4">
                 <RegistrationPanel 
                    eventoAtivo={eventoAtivo} 
                    setoresEvento={setoresEvento} 
@@ -655,8 +636,8 @@ export default function Convidados() {
             </div>
           )
         ) : (
-          <div className="text-center p-24 bg-white rounded-3xl shadow-sm">
-            <h2 className="text-slate-400">Nenhum evento selecionado.</h2>
+          <div className="text-center p-20 bg-[#1a2333] border border-[#2a374a] rounded-xl">
+            <h2 className="text-slate-400 text-sm font-bold uppercase tracking-widest">Nenhum evento selecionado.</h2>
           </div>
         )}
       </div>
@@ -665,7 +646,7 @@ export default function Convidados() {
       {showSmartImport && <SmartImporterModal eventoId={eventoAtivo} categoriaPadrao={categoria} onClose={() => setShowSmartImport(false)} onShowAlert={exibirAlerta} onReload={() => queryClient.invalidateQueries(['convidados', eventoAtivo])} />}
       
       {msg.texto && (
-        <div className={`fixed top-24 right-5 p-4 rounded-xl text-white font-bold z-[1000] shadow-xl animate-in fade-in slide-in-from-top-4 ${msg.tipo === 'sucesso' ? 'bg-emerald-500' : 'bg-red-500'}`}>
+        <div className={`fixed top-24 right-5 p-4 rounded-xl text-white text-sm font-bold z-[1000] shadow-2xl animate-in fade-in slide-in-from-top-4 ${msg.tipo === 'sucesso' ? 'bg-emerald-600' : 'bg-red-600'}`}>
           {msg.texto}
         </div>
       )}
