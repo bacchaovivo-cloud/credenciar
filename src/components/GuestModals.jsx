@@ -3,155 +3,154 @@ import React from 'react';
 export const EditGuestModal = ({ isOpen, convidado, onSave, onClose, setoresEvento, historico }) => {
   if (!isOpen || !convidado) return null;
 
+  const inputCls = "w-full p-2.5 rounded-lg border border-[#2a374a] bg-[#0f1522] text-white focus:border-blue-500 outline-none transition-colors text-xs placeholder:text-slate-600";
+  const labelCls = "text-[10px] font-bold uppercase text-slate-500 mb-1.5 block tracking-widest";
+
   return (
-    <div className="fixed inset-0 z-[8000] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 border border-white/10">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Editar Participante</h3>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-400">
-            <i className="bi bi-x-lg text-xl"></i>
+    <div className="fixed inset-0 z-[8000] bg-[#0f1522]/90 flex items-center justify-center p-4">
+      <div className="bg-[#1a2333] p-6 rounded-xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 border border-[#2a374a] max-h-[90vh] overflow-y-auto custom-scrollbar flex flex-col">
+        <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#2a374a]">
+          <h3 className="text-lg font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <i className="bi bi-person-lines-fill text-blue-500"></i> Editar Participante
+          </h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-[#2a374a] rounded-lg transition-colors text-slate-400 hover:text-white">
+            <i className="bi bi-x-lg"></i>
           </button>
         </div>
 
         <form onSubmit={onSave} className="space-y-4">
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-500 ml-1 mb-1 block">Nome Completo</label>
+            <label className={labelCls}>Nome Completo</label>
             <input
               type="text"
               value={convidado.nome}
               onChange={e => onSave({ ...convidado, nome: e.target.value }, true)}
-              className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none transition-all"
+              className={inputCls}
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-500 ml-1 mb-1 block">CPF</label>
+              <label className={labelCls}>CPF</label>
               <input
                 type="text"
                 value={convidado.cpf || ''}
                 onChange={e => onSave({ ...convidado, cpf: e.target.value }, true)}
-                className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none transition-all"
+                className={inputCls}
               />
             </div>
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-500 ml-1 mb-1 block">Telefone / WhatsApp</label>
+              <label className={labelCls}>Telefone / WhatsApp</label>
               <input
                 type="text"
                 value={convidado.telefone || ''}
                 onChange={e => onSave({ ...convidado, telefone: e.target.value }, true)}
-                className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none transition-all"
+                className={inputCls}
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-500 ml-1 mb-1 block">E-mail (Opcional)</label>
+            <label className={labelCls}>E-mail (Opcional)</label>
             <input
               type="email"
               value={convidado.email || ''}
               onChange={e => onSave({ ...convidado, email: e.target.value }, true)}
-              className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none transition-all"
+              className={inputCls}
               placeholder="exemplo@email.com"
             />
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-500 ml-1 mb-1 block">Categoria / Setor</label>
+            <label className={labelCls}>Categoria / Setor</label>
             <div className="relative">
               <select
                 value={convidado.categoria}
                 onChange={e => onSave({ ...convidado, categoria: e.target.value }, true)}
-                className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none transition-all appearance-none cursor-pointer"
+                className={`${inputCls} appearance-none cursor-pointer`}
               >
                 {setoresEvento.map((s, i) => (
                   <option key={i} value={s.nome}>{s.nome}</option>
                 ))}
               </select>
-              <i className="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+              <i className="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-xs"></i>
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-500 ml-1 mb-1 block">Observações Críticas</label>
+            <label className={labelCls}>Observações Críticas</label>
             <textarea
               value={convidado.observacoes || ''}
               onChange={e => onSave({ ...convidado, observacoes: e.target.value }, true)}
               placeholder="Ex: Alérgico a camarão, VIP Master, etc."
-              className="w-full p-4 h-20 rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none resize-none"
+              className={`${inputCls} h-16 resize-none`}
             />
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-500 ml-1 mb-1 block">Tags (Separadas por vírgula)</label>
+            <label className={labelCls}>Tags (Separadas por vírgula)</label>
             <input
               type="text"
               value={convidado.tags || ''}
               onChange={e => onSave({ ...convidado, tags: e.target.value }, true)}
               placeholder="Ex: PALESTRANTE, STAFF, IMPRENSA"
-              className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none"
+              className={inputCls}
             />
           </div>
 
-          <div className="pt-4 flex gap-3">
+          <div className="pt-4 flex gap-3 border-t border-[#2a374a] mt-6">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 p-4 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all font-sans uppercase text-xs tracking-widest"
+              className="flex-1 py-2.5 border border-[#2a374a] bg-[#0f1522] text-slate-400 hover:text-white hover:bg-[#2a374a] rounded-lg font-bold transition-all uppercase text-[10px] tracking-widest"
             >
-              CANCELAR
+              Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 p-4 bg-sky-500 hover:bg-sky-600 text-white rounded-2xl font-black shadow-lg shadow-sky-500/30 transition-all active:scale-95 uppercase text-xs tracking-widest"
+              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold transition-all active:scale-95 uppercase text-[10px] tracking-widest flex items-center justify-center gap-2"
             >
-              SALVAR ALTERAÇÕES
+              <i className="bi bi-floppy-fill"></i> Salvar
             </button>
           </div>
         </form>
 
         {/* TIMELINE DE ATIVIDADE */}
         {historico && historico.length > 0 && (
-          <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-700">
-            <h4 className="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest flex items-center gap-2">
+          <div className="mt-6 pt-6 border-t border-[#2a374a]">
+            <h4 className="text-[10px] font-bold uppercase text-slate-500 mb-4 tracking-widest flex items-center gap-2">
               <i className="bi bi-clock-history"></i> Histórico de Auditoria
             </h4>
             <div className="space-y-4 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
               {historico.map((h, i) => (
-                <div key={i} className="flex gap-4 relative">
+                <div key={i} className="flex gap-3 relative">
                   {i !== historico.length - 1 && (
-                    <div className="absolute left-[11px] top-6 bottom-0 w-0.5 bg-slate-100 dark:bg-slate-700"></div>
+                    <div className="absolute left-3 top-7 bottom-[-1rem] w-px bg-[#2a374a]"></div>
                   )}
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${h.tipo === 'CHECKIN' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'} shadow-sm`}>
-                    <i className={`bi ${h.tipo === 'CHECKIN' ? 'bi-check-circle-fill' : 'bi-info-circle'} text-[10px]`}></i>
+                  <div className={`w-6 h-6 rounded border flex items-center justify-center flex-shrink-0 z-10 ${h.tipo === 'CHECKIN' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-[#0f1522] border-[#2a374a] text-slate-400'}`}>
+                    <i className={`bi ${h.tipo === 'CHECKIN' ? 'bi-check-lg' : 'bi-info-lg'} text-xs`}></i>
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 pb-1">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight m-0">{h.tipo === 'CHECKIN' ? 'Check-in Realizado' : h.detalhes}</p>
+                      <p className="text-[11px] font-bold text-white leading-tight m-0">{h.tipo === 'CHECKIN' ? 'Check-in Realizado' : h.detalhes}</p>
                       {h.assinatura_hash && (
-                        <span className="bg-emerald-500/10 text-emerald-500 text-[8px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-emerald-500/20">
-                          <i className="bi bi-shield-check"></i> ASSINATURA VÁLIDA
+                        <span className="bg-[#0f1522] text-emerald-400 border border-emerald-500/30 text-[8px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <i className="bi bi-shield-check"></i> VÁLIDA
                         </span>
                       )}
                     </div>
                     {h.assinatura_hash && (
-                      <p className="text-[9px] font-mono text-slate-400 dark:text-slate-500 truncate mb-1">Hash: {h.assinatura_hash}</p>
+                      <p className="text-[9px] font-mono text-slate-500 truncate mb-1 border border-[#2a374a] bg-[#0f1522] px-1.5 py-0.5 rounded w-fit max-w-full">
+                        {h.assinatura_hash.substring(0, 16)}...
+                      </p>
                     )}
-                    {h.checkin_photo && (
-                      <div className="mt-2 mb-2 rounded-xl overflow-hidden border border-white/10 shadow-lg max-w-[120px] group relative cursor-zoom-in" onClick={() => window.open(h.checkin_photo)}>
-                        <img src={h.checkin_photo} alt="Check-in Snapshot" className="w-full h-auto" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <i className="bi bi-search text-white"></i>
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center">
-                      <span className="text-[9px] text-slate-400 font-bold uppercase">
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">
                         {new Date(h.criado_em).toLocaleDateString()} {new Date(h.criado_em).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       {h.station_id && (
-                        <span className="text-[8px] bg-slate-100 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded-md font-black">ESTAÇÃO: {h.station_id}</span>
+                        <span className="text-[8px] bg-[#0f1522] border border-[#2a374a] text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">ST: {h.station_id}</span>
                       )}
                     </div>
                   </div>
@@ -169,20 +168,20 @@ export const QRCodeModal = ({ isOpen, qrData, onClose }) => {
   if (!isOpen || !qrData) return null;
 
   return (
-    <div className="fixed inset-0 z-[8000] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl w-full max-w-sm flex flex-col items-center gap-6 shadow-2xl animate-in zoom-in-95 duration-200">
-        <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase text-center leading-tight">
-          Credencial de <br /><span className="text-sky-500">{qrData.nome}</span>
+    <div className="fixed inset-0 z-[8000] bg-[#0f1522]/90 flex items-center justify-center p-4">
+      <div className="bg-[#1a2333] border border-[#2a374a] p-8 rounded-xl w-full max-w-sm flex flex-col items-center gap-6 shadow-2xl animate-in zoom-in-95 duration-200">
+        <h3 className="text-sm font-bold text-white uppercase text-center leading-tight tracking-widest">
+          Credencial <br /><span className="text-blue-500">{qrData.nome}</span>
         </h3>
-        <div className="bg-white p-4 rounded-2xl shadow-inner flex items-center justify-center" style={{ width: 256, height: 256 }}>
+        <div className="bg-white p-3 rounded-lg shadow-inner flex items-center justify-center border-4 border-[#2a374a]" style={{ width: 220, height: 220 }}>
           {qrData.dataUrl ? (
             <img src={qrData.dataUrl} alt="QR Code" className="w-full h-full object-contain" />
           ) : (
-            <div className="animate-pulse bg-slate-100 w-full h-full rounded-xl"></div>
+            <div className="animate-pulse bg-slate-200 w-full h-full rounded"></div>
           )}
         </div>
-        <p className="font-mono text-sm text-slate-500">{qrData.src}</p>
-        <button onClick={onClose} className="mt-2 w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white font-bold py-4 rounded-xl transition-colors active:scale-95">
+        <p className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">{qrData.src}</p>
+        <button onClick={onClose} className="mt-2 w-full bg-[#0f1522] border border-[#2a374a] hover:bg-[#2a374a] text-slate-400 hover:text-white font-bold py-3 rounded-lg transition-colors active:scale-95 text-[10px] uppercase tracking-widest">
           FECHAR
         </button>
       </div>
@@ -193,20 +192,31 @@ export const QRCodeModal = ({ isOpen, qrData, onClose }) => {
 export const BigFeedbackModal = ({ status }) => {
   if (!status || !status.ativo) return null;
 
+  const bgColors = {
+    premium: 'bg-amber-500',
+    emerald: 'bg-emerald-600',
+    '#10b981': 'bg-emerald-600',
+    error: 'bg-red-600'
+  };
+
+  const bgClass = status.premium 
+    ? bgColors.premium 
+    : (status.cor === 'emerald' || status.cor === '#10b981' ? bgColors.emerald : bgColors.error);
+
   return (
-    <div className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center text-white text-center transition-all duration-500 ${status.premium ? 'bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600' : (status.cor === 'emerald' || status.cor === '#10b981' ? 'bg-emerald-500' : 'bg-red-500')}`}>
-      {status.premium && <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>}
-      <h1 className={`text-[150px] m-0 drop-shadow-2xl ${status.premium ? 'animate-bounce' : ''}`}>
-        {status.premium ? "🌟" : (status.cor === 'emerald' || status.cor === "#10b981" ? "✅" : "❌")}
+    <div className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center text-white text-center transition-all duration-300 ${bgClass}`}>
+      <h1 className={`text-[120px] m-0 drop-shadow-lg leading-none mb-6 ${status.premium ? 'animate-bounce' : ''}`}>
+        {status.premium ? "⭐" : (status.cor === 'emerald' || status.cor === "#10b981" ? "✅" : "❌")}
       </h1>
-      <h1 className="text-5xl md:text-[70px] font-black drop-shadow-md mb-4 px-4 uppercase tracking-tighter italic">
-        {status.premium ? "✨ ACESSO VIP LIBERADO ✨" : status.msg}
+      <h1 className="text-4xl md:text-6xl font-black drop-shadow-md mb-6 px-4 uppercase tracking-tighter">
+        {status.premium ? "ACESSO VIP LIBERADO" : status.msg}
       </h1>
-      <h2 className="text-3xl md:text-[40px] font-bold drop-shadow-md px-4 bg-black/20 py-2 rounded-2xl">
+      <h2 className="text-2xl md:text-4xl font-bold drop-shadow-md px-8 py-4 bg-black/20 rounded-xl border border-white/10 uppercase tracking-tight">
         {status.nome}
       </h2>
-      {status.premium && <p className="mt-8 text-xl font-black tracking-[0.2em] animate-pulse">RECEPÇÃO DIFERENCIADA</p>}
-      <div className="mt-12 h-2 w-64 bg-white/20 rounded-full overflow-hidden">
+      {status.premium && <p className="mt-8 text-sm font-black tracking-[0.3em] animate-pulse bg-amber-900/40 px-4 py-2 rounded-lg border border-amber-400/30">RECEPÇÃO DIFERENCIADA</p>}
+      
+      <div className="absolute bottom-12 w-64 h-1.5 bg-black/20 rounded-full overflow-hidden">
         <div className="h-full bg-white animate-progress-fast"></div>
       </div>
     </div>

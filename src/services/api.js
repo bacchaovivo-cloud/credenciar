@@ -8,6 +8,9 @@ const BASE_URL = import.meta.env.VITE_API_URL || (
 
 export const apiRequest = async (endpoint, body = null, method = null) => {
   const url = `${BASE_URL}/${endpoint}`;
+  
+  // Mantemos a leitura do storage por enquanto como "fallback" para não quebrar 
+  // o sistema durante a transição, mas a meta é que isso suma no futuro.
   const token = localStorage.getItem('userToken');
   
   const options = {
@@ -16,6 +19,9 @@ export const apiRequest = async (endpoint, body = null, method = null) => {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     },
+    // 🔐 CORREÇÃO: Esta é a linha mágica. Ela instrui o navegador a anexar 
+    // automaticamente os cookies httpOnly (como o seu JWT) em todas as requisições.
+    credentials: 'include'
   };
 
   if (body) options.body = JSON.stringify(body);
@@ -24,10 +30,11 @@ export const apiRequest = async (endpoint, body = null, method = null) => {
     const response = await fetch(url, options);
     
     // Sessão expirada: limpa e redireciona
-    if (response.status === 401 || (response.status === 403)) {
+    if (response.status === 401 || response.status === 403) {
       const errorData = await response.json().catch(() => ({}));
       if (errorData.message?.includes('Token Rejeitado') || errorData.message?.includes('Token não fornecido')) {
         localStorage.removeItem('userToken');
+        localStorage.removeItem('token'); // Garantindo a limpeza da chave usada no App.jsx
         localStorage.removeItem('userRole');
         localStorage.removeItem('userName');
         localStorage.removeItem('userPermissions');
@@ -44,4 +51,4 @@ export const apiRequest = async (endpoint, body = null, method = null) => {
     // O modo offline é gerenciado pelo useCheckinFlow + ZenithEdge (dbLocal.js)
     return { success: false, message: 'Erro de conexão com o servidor.', offline: true };
   }
-};
+}

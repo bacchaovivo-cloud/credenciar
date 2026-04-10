@@ -56,11 +56,11 @@ export const getConvidados = async (req, res) => {
   const [rows] = await db.query(
     `SELECT id, nome, qrcode, categoria, evento_id, cpf, telefone, email, status_checkin, data_entrada, 
      (SELECT GROUP_CONCAT(DATE_FORMAT(data_ponto, '%Y-%m-%d')) FROM ${logsTable} WHERE convidado_id = ${convTable}.id) as dias_ponto_raw,
-     (SELECT GROUP_CONCAT(CONCAT(IFNULL(CONCAT('Dia ', LPAD(DATEDIFF(DATE(data_ponto), (SELECT DATE(data_inicio) FROM eventos WHERE id = ${eventoId})) + 1, 2, '0'), ': '), ''), DATE_FORMAT(criado_em, '%d/%m/%Y %H:%i:%s')) ORDER BY criado_em ASC SEPARATOR ' | ') FROM ${logsTable} WHERE convidado_id = ${convTable}.id) as dias_presente
+     (SELECT GROUP_CONCAT(CONCAT(IFNULL(CONCAT('Dia ', LPAD(DATEDIFF(DATE(data_ponto), (SELECT DATE(data_inicio) FROM eventos WHERE id = ?)) + 1, 2, '0'), ': '), ''), DATE_FORMAT(criado_em, '%d/%m/%Y %H:%i:%s')) ORDER BY criado_em ASC SEPARATOR ' | ') FROM ${logsTable} WHERE convidado_id = ${convTable}.id) as dias_presente
      FROM ${convTable} ${queryWhere} 
      ORDER BY nome ASC 
      LIMIT ? OFFSET ?`,
-    [...queryParams, limit, offset]
+    [eventoId, ...queryParams, limit, offset]
   );
 
   res.json({
@@ -145,6 +145,7 @@ export const deleteConvidado = async (req, res) => {
   registrarLog(req.user.id, 'DELETAR_CONVIDADO', `Nome: ${c?.nome} (Evento: ${eventoId})`, req.ip);
   res.json({ success: true, message: 'Convidado removido' });
 };
+
 export const check = async (req, res) => {
   // Fix Bug#2: Validação Zod do payload — previne query com eventoId inválido (NaN tabelas)
   const parsed = checkinPayloadSchema.safeParse(req.body);
@@ -194,7 +195,8 @@ export const check = async (req, res) => {
      res.json(result);
   } catch (error) {
      Logger.error('Erro ao registrar check-in via Controller:', error);
-     res.json({ 
+     // ✅ CORREÇÃO: Status 400 para erros de regra de negócio
+     res.status(400).json({ 
         success: false, 
         message: error.message 
      });
@@ -238,7 +240,8 @@ export const checkinFace = async (req, res) => {
      res.json(result);
   } catch (error) {
      Logger.error('Erro no checkinFace via Controller:', error);
-     res.json({ success: false, message: error.message });
+     // ✅ CORREÇÃO: Status 400 para erros de negócio ou biometria não reconhecida
+     res.status(400).json({ success: false, message: error.message });
   }
 };
 
@@ -278,7 +281,6 @@ export const checkinMassa = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Payload de sync inválido', errors: e.errors });
   }
 
-  // Fix Bug#3 (dead code removido): Zod já garante que checkins é um array válido
   const results = { sucessos: 0, falhas: 0 };
   
   // Limita a 5 conexões simultâneas para evitar estrangular pool do DB
@@ -351,10 +353,10 @@ export const exportarCSV = async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT nome, cpf, categoria, status_checkin, data_entrada,
-       (SELECT GROUP_CONCAT(CONCAT(IFNULL(CONCAT('Dia ', LPAD(DATEDIFF(data_ponto, (SELECT data_inicio FROM eventos WHERE id = ${eventoId})) + 1, 2, '0'), ': '), ''), DATE_FORMAT(criado_em, '%d/%m/%Y %H:%i:%s')) ORDER BY criado_em ASC SEPARATOR ' | ') FROM ${logsTable} WHERE convidado_id = ${convTable}.id) as dias_presente
+       (SELECT GROUP_CONCAT(CONCAT(IFNULL(CONCAT('Dia ', LPAD(DATEDIFF(data_ponto, (SELECT data_inicio FROM eventos WHERE id = ?)) + 1, 2, '0'), ': '), ''), DATE_FORMAT(criado_em, '%d/%m/%Y %H:%i:%s')) ORDER BY criado_em ASC SEPARATOR ' | ') FROM ${logsTable} WHERE convidado_id = ${convTable}.id) as dias_presente
        FROM ${convTable} 
        ORDER BY status_checkin DESC, nome ASC`,
-      []
+      [eventoId]
     );
 
     // Função de Higienização Contra CSV Injection (CWE-1236)
@@ -412,9 +414,9 @@ export const exportarXLSX = async (req, res) => {
   
   const [rows] = await db.query(
     `SELECT nome, cpf, telefone, qrcode, categoria, CASE WHEN status_checkin=1 THEN "Sim" ELSE "Não" END as presente, data_entrada,
-     (SELECT GROUP_CONCAT(CONCAT(IFNULL(CONCAT('Dia ', LPAD(DATEDIFF(data_ponto, (SELECT data_inicio FROM eventos WHERE id = ${eventoId})) + 1, 2, '0'), ': '), ''), DATE_FORMAT(criado_em, '%d/%m/%Y %H:%i:%s')) ORDER BY criado_em ASC SEPARATOR ' | ') FROM ${logsTable} WHERE convidado_id = ${convTable}.id) as dias_presente
+     (SELECT GROUP_CONCAT(CONCAT(IFNULL(CONCAT('Dia ', LPAD(DATEDIFF(data_ponto, (SELECT data_inicio FROM eventos WHERE id = ?)) + 1, 2, '0'), ': '), ''), DATE_FORMAT(criado_em, '%d/%m/%Y %H:%i:%s')) ORDER BY criado_em ASC SEPARATOR ' | ') FROM ${logsTable} WHERE convidado_id = ${convTable}.id) as dias_presente
      FROM ${convTable} ORDER BY nome ASC`,
-    []
+    [eventoId]
   );
 
   const workbook = new ExcelJS.Workbook();
@@ -458,6 +460,7 @@ export const resetCheckins = async (req, res) => {
   registrarLog(req.user.id, 'RESET_CHECKINS', `Evento ID: ${eventoId}`, req.ip);
   res.json({ success: true });
 };
+
 export const importarEmMassa = async (req, res) => {
     const { eventoId } = req.params;
     const { convidados } = req.body;
@@ -473,7 +476,7 @@ export const importarEmMassa = async (req, res) => {
             c.cpf || null,
             c.email || null,
             c.categoria || 'GERAL',
-            String(Math.random()).slice(2, 10), // Placeholder QR
+            `BACCH_${crypto.randomUUID().replace(/-/g, '').toUpperCase()}`, 
             0 // status_checkin
         ]);
 

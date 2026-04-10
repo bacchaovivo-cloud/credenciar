@@ -1,4 +1,6 @@
 import { ZodError } from 'zod';
+// 🔐 CORREÇÃO: Importando o env validado pelo seu Zod
+import { env } from '../config/env.js'; 
 
 export const errorHandler = (err, req, res, next) => {
   if (err instanceof ZodError) {
@@ -10,7 +12,8 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
-  const isDev = process.env.NODE_ENV === 'development';
+  // 🔐 CORREÇÃO: Usando a variável blindada e garantida pelo sistema
+  const isDev = env.NODE_ENV === 'development';
   console.error('🔥 Erro na Aplicação:', err.stack || err.message);
 
   res.status(err.status || 500).json({

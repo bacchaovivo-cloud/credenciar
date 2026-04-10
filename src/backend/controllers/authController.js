@@ -10,6 +10,19 @@ const SALT_ROUNDS = 10;
 const SECRET_KEY = env.JWT_SECRET;
 
 /**
+ * 🛠️ HELPER: Configuração do Cookie Seguro
+ * Garante que o cookie não seja acessível via JavaScript (XSS)
+ */
+const setSecureCookie = (res, token) => {
+  res.cookie('token', token, {
+    httpOnly: true, // Impede acesso via document.cookie
+    secure: process.env.NODE_ENV === 'production', // true se estiver em HTTPS
+    sameSite: 'strict', // Proteção contra CSRF
+    maxAge: 24 * 60 * 60 * 1000 // 24 horas (mesmo tempo do JWT)
+  });
+};
+
+/**
  * 🔐 LOGIN (Fase 1: Credenciais Básicas)
  */
 export const login = async (req, res) => {
@@ -31,8 +44,6 @@ export const login = async (req, res) => {
 
     // [ZENITH-UPGRADE] Verificação de 2FA Opcional
     if (user.two_factor_enabled) {
-      // Retorna token parcial para a segunda etapa
-      // Fix: algoritmo explícito — consistente com o verify que já usa HS256
       const partialToken = jwt.sign({ id: user.id, partial: true }, SECRET_KEY, { algorithm: 'HS256', expiresIn: '5m' });
       return res.json({ 
         success: true, 
@@ -42,13 +53,17 @@ export const login = async (req, res) => {
       });
     }
 
-    // Login Direto (2FA Desabilitado) - Fix #14: 24h de validade para turnos longos
+    // Login Direto (2FA Desabilitado)
     const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, { algorithm: 'HS256', expiresIn: '24h' });
+    
+    // 🔐 CORREÇÃO: Seta o token como um Cookie seguro
+    setSecureCookie(res, token);
+    
     await registrarLog(user.id, 'LOGIN', `Login realizado com sucesso (2FA Inativo)`, ip);
 
     res.json({ 
       success: true, 
-      token, 
+      token, // Mantido como fallback para não quebrar frontend antigo
       role: user.role, 
       evento_id: user.evento_atribuido, 
       nome: user.nome,
@@ -85,8 +100,11 @@ export const login2Step = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Código inválido ou expirado' });
     }
 
-    // Fix #14: 24h de validade para turnos longos
     const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, { algorithm: 'HS256', expiresIn: '24h' });
+    
+    // 🔐 CORREÇÃO: Seta o token como um Cookie seguro
+    setSecureCookie(res, token);
+
     await registrarLog(user.id, 'LOGIN_2FA', `Login com 2FA: ${recoveryCode ? 'Recuperação' : 'TOTP'}`, ip);
 
     res.json({ 
@@ -103,27 +121,59 @@ export const login2Step = async (req, res) => {
 };
 
 /**
+ * 🚪 LOGOUT
+ */
+export const logout = async (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+  res.json({ success: true, message: 'Logout realizado com sucesso' });
+};
+
+
+/**
  * 🛠️ CONFIGURAÇÃO DE 2FA (Setup)
  */
 export const generate2FASetup = async (req, res) => {
   try {
     const [userRows] = await db.query('SELECT usuario, email FROM usuarios WHERE id = ?', [req.user.id]);
     const setup = await AuthService.generate2FA(req.user.id, userRows[0].usuario);
-    res.json({ success: true, ...setup });
+    
+    // ✅ CORREÇÃO: Salva o segredo gerado no banco (mas não o ativa ainda) para evitar 
+    // que o front-end envie um segredo forjado na próxima requisição.
+    await db.query('UPDATE usuarios SET two_factor_secret = ? WHERE id = ?', [setup.secret, req.user.id]);
+    
+    // Remove o 'secret' da resposta para não expor a string limpa se não for necessário
+    // (O frontend usa a URL otpauth ou o QRCode para gerar os códigos)
+    const { secret, ...safeSetup } = setup; 
+    
+    res.json({ success: true, ...safeSetup });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
 export const verifyAndEnable2FA = async (req, res) => {
-  const { secret, token, recoveryCodes } = req.body;
-  const verificado = AuthService.verifyToken(secret, token);
+  const { token, recoveryCodes } = req.body;
+  
+  // ✅ CORREÇÃO: Lê o segredo diretamente do banco de dados (confiável), não do body (vulnerável).
+  const [userRows] = await db.query('SELECT two_factor_secret FROM usuarios WHERE id = ?', [req.user.id]);
+  const serverSecret = userRows[0]?.two_factor_secret;
+  
+  if (!serverSecret) {
+      return res.status(400).json({ success: false, message: 'Processo de setup não iniciado. Solicite um novo QR Code.' });
+  }
+
+  const verificado = AuthService.verifyToken(serverSecret, token);
 
   if (!verificado) {
     return res.status(400).json({ success: false, message: 'Código de verificação incorreto' });
   }
 
-  await AuthService.enable2FA(req.user.id, secret, recoveryCodes);
+  // A função enable2FA deve apenas atualizar 'two_factor_enabled = 1' e os códigos de recuperação
+  await AuthService.enable2FA(req.user.id, serverSecret, recoveryCodes);
   res.json({ success: true, message: '2FA Habilitado com sucesso!' });
 };
 
@@ -156,7 +206,6 @@ export const createUsuario = async (req, res) => {
     const validatedData = usuarioSchema.parse(req.body);
     const { nome, usuario, senha, role, permissoes } = validatedData;
     
-    // Fix: Verificar duplicata antes de inserir
     const [existing] = await db.query('SELECT id FROM usuarios WHERE usuario = ?', [usuario]);
     if (existing.length > 0) {
       return res.status(409).json({ success: false, message: `Nome de usuário "${usuario}" já existe.` });
@@ -205,7 +254,6 @@ export const updateUsuario = async (req, res) => {
 
 export const deleteUsuario = async (req, res) => {
   const { id } = req.params;
-  // Fix #11: Impede auto-deleção do ADMIN logado
   if (parseInt(id) === req.user?.id) {
     return res.status(400).json({ success: false, message: 'Você não pode excluir a sua própria conta.' });
   }

@@ -62,49 +62,56 @@ export default function FaceRegistrationModal({ convidado, onClose, onShowToast 
   };
 
   return (
-    <div className="fixed inset-0 z-[600] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl border border-white/10">
-        <div className="p-8 text-center">
-            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight">Registro Fast-Pass</h3>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 font-medium">Cadastrando biometria para: <span className="text-sky-500 font-bold">{convidado.nome}</span></p>
+    <div className="fixed inset-0 z-[8000] bg-[#0f1522]/90 flex items-center justify-center p-4">
+      <div className="bg-[#1a2333] border border-[#2a374a] rounded-xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="p-6 text-center">
+            <h3 className="text-lg font-bold text-white mb-1 uppercase tracking-wider flex items-center justify-center gap-2">
+              <i className="bi bi-person-bounding-box text-blue-500"></i> Registro Fast-Pass
+            </h3>
+            <p className="text-slate-400 text-xs mb-6 font-bold uppercase tracking-widest">
+              Biometria: <span className="text-blue-400">{convidado.nome}</span>
+            </p>
 
-            <div className="relative aspect-square w-full max-w-[320px] mx-auto rounded-3xl overflow-hidden bg-black border-4 border-slate-100 dark:border-slate-700 shadow-inner mb-8">
+            <div className="relative aspect-square w-full max-w-[280px] mx-auto rounded-lg overflow-hidden bg-[#0f1522] border-2 border-[#2a374a] shadow-inner mb-6">
                 {loading && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10">
-                        <div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p className="mt-4 text-sky-500 font-bold text-xs uppercase tracking-widest">Iniciando Câmera...</p>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0f1522] z-10">
+                        <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+                        <p className="mt-4 text-blue-400 font-bold text-[10px] uppercase tracking-widest">Iniciando Câmera...</p>
                     </div>
                 )}
                 
                 {error && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                        <i className="bi bi-camera-video-off text-4xl text-red-500 mb-2"></i>
-                        <p className="text-red-500 font-bold text-sm">{error}</p>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-[#0f1522] z-10">
+                        <i className="bi bi-camera-video-off text-3xl text-red-500 mb-2"></i>
+                        <p className="text-red-400 font-bold text-[10px] uppercase tracking-widest">{error}</p>
                     </div>
                 )}
 
                 <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover scale-x-[-1]" />
                 
                 {!loading && !error && (
-                    <div className="absolute inset-0 pointer-events-none ring-4 ring-inset ring-sky-500/20">
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-64 border-2 border-dashed border-white/40 rounded-full"></div>
+                    <div className="absolute inset-0 pointer-events-none ring-2 ring-inset ring-blue-500/30">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-56 border-2 border-dashed border-blue-500/50 rounded-[40%]"></div>
                     </div>
                 )}
             </div>
 
             <div className="flex gap-3">
-                <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-200 transition-all">
+                <button 
+                  onClick={onClose} 
+                  className="flex-1 py-3 rounded-lg border border-[#2a374a] bg-[#0f1522] text-slate-400 font-bold hover:text-white hover:bg-[#2a374a] transition-all text-[10px] uppercase tracking-widest"
+                >
                     Cancelar
                 </button>
                 <button 
                     onClick={capturarBiometria} 
                     disabled={loading || !!error || capturando}
-                    className="flex-[2] py-4 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black shadow-lg shadow-sky-500/20 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                    className="flex-[2] py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest"
                 >
                     {capturando ? (
-                        <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> PROCESSANDO...</>
+                        <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> PROCESSANDO...</>
                     ) : (
-                        <><i className="bi bi-camera-fill text-xl"></i> CAPTURAR ROSTO</>
+                        <><i className="bi bi-camera-fill text-sm"></i> CAPTURAR ROSTO</>
                     )}
                 </button>
             </div>

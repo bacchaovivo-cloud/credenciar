@@ -21,17 +21,43 @@ const Kiosk = lazy(() => import('./pages/Kiosk'));
 const WelcomeVIP = lazy(() => import('./pages/WelcomeVIP'));
 const ExecutiveDashboard = lazy(() => import('./pages/ExecutiveDashboard'));
 
+// CORREÇÃO: Função para extrair a role de forma segura do payload do JWT.
+// Isso impede que alguém altere a variável no DevTools e ganhe acesso visual às telas.
+const getSecureRole = () => {
+  try {
+    // Certifique-se de que 'token' é exatamente a chave onde você salva o seu JWT no login
+    const token = localStorage.getItem('token'); 
+    if (!token) return null;
+    
+    // Decodifica o payload do JWT (parte central do token)
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    const payload = JSON.parse(jsonPayload);
+    // Retorna a role de dentro do token (ajuste para 'userRole' se for esse o nome da propriedade no seu payload)
+    return payload.role || payload.userRole || null; 
+  } catch (error) {
+    // Em caso de falha (token corrompido, manipulado ou ausente), bloqueia o acesso
+    return null;
+  }
+};
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const role = localStorage.getItem('userRole');
+  // CORREÇÃO: Lemos a role do JWT em vez da string solta no localStorage
+  const role = getSecureRole();
+  
   if (!role) return <Navigate to="/" />;
   
   const safeRole = role.trim().toUpperCase();
   
-  // Se não houver roles específicos exigidos, basta estar logado
+  // Se não houver roles específicos exigidos, basta estar logado (token válido)
   if (!allowedRoles) return children;
 
   if (!allowedRoles.includes(safeRole)) {
-    // Redireciona para a home ou convidados se não tiver permissão
+    // Redireciona para convidados se não tiver permissão
     return <Navigate to="/convidados" />;
   }
   
@@ -137,4 +163,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;

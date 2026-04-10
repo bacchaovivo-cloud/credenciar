@@ -37,12 +37,10 @@ export const CheckinService = {
             if (participantes.length === 0) throw new Error('Ingresso não encontrado.');
             const p = participantes[0];
 
-            // Heurística de Fraude (#2: usa tabela isolada do evento)
+            // Heurística de Fraude
             const fraud = await checkFraudHeuristics('CHECKIN', { ip, eventoId: evento_id, logsTable }, db);
             
             // 3. Verificação de Múltiplos Dias (Bloqueio Apenas para o Dia Informado)
-            
-            // Fix: Garantir que se a data vier como string vazia, seja tratada como null para acionar o fallback
             const pontoLimpo = (data_ponto && String(data_ponto).trim() !== '') ? data_ponto : null;
             const dataReferencia = pontoLimpo || new Date().toISOString().split('T')[0];
             
@@ -61,15 +59,15 @@ export const CheckinService = {
                 [entrada, p.id]
             );
 
-        // Grava Log Isolado com Foto (Se houver)
-        const assinatura = generateSignature({ convidadoId: p.id, mode: 'QR' });
+            const assinatura = generateSignature({ convidadoId: p.id, mode: 'QR' });
+            
+            // Gravação no Banco (Ponto Crítico)
             await db.query(
                 `INSERT INTO ${logsTable} (convidado_id, evento_id, data_ponto, ip, assinatura_hash, is_suspicious, station_id, checkin_photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
                 [p.id, evento_id, dataReferencia, ip, assinatura, (fraud.score < 70 ? 1 : 0), station_id || 'QR_SCAN', photo || null]
             );
 
             // 4. Log Forense Central
-            // 4. Log Forense Central - Fix #23: Ordem correta dos argumentos (uID, acao, detalhes, ip)
             await registrarLog(null, 'CHECKIN_QR', `Convidado: ${p.nome} | ID: ${p.id} | Evento: ${evento_id} | Station: ${station_id || 'Portal'} | Score: ${fraud.score}`, ip);
 
             // 💬 ZENITH WHATSAPP CONCIERGE (Opcional)
@@ -84,13 +82,12 @@ export const CheckinService = {
 
             const result = { success: true, participante: p, fraud_score: fraud.score, isVIP };
 
-            // Registra sucesso em cache (Evita double-click de rede por 10s)
+            // CORREÇÃO RACE CONDITION: O Cache só é setado AQUI, após o insert no banco ter sucesso sem jogar exceção
             CacheService.set(requestId, result, 10000);
 
             // 🚨 REAL-TIME ENTERPRISE EVENTS (Socket ID)
             const io = BrotherService.io; 
             if (io) {
-              // 1. Notificação VIP
               if (isVIP) {
                 io.emit('vip_arrival', {
                   id: p.id,
@@ -100,8 +97,6 @@ export const CheckinService = {
                   timestamp: new Date()
                 });
               }
-              
-              // 2. Refresh Global do Dashboard
               io.emit('stats_update', { evento_id });
             }
 
@@ -110,7 +105,6 @@ export const CheckinService = {
             CacheService.delete('stats_dashboard_geral');
             CacheService.delete('stats_consolidado');
 
-            // 🚨 Alert Center: Alerta em tempo real se check-in suspeito
             if (fraud.score < 70 && io) {
               AlertService.checkinSuspeito(io, {
                 convidado: p,
@@ -121,7 +115,6 @@ export const CheckinService = {
               });
             }
 
-            // 🔔 Webhooks B2B: Dispara notificação para sistemas externos (não-bloqueante)
             WebhookService.dispatch(evento_id, WebhookEvent.CHECKIN, {
               convidado_id: p.id,
               nome: p.nome,
@@ -135,6 +128,12 @@ export const CheckinService = {
 
             return result;
         } catch (error) {
+            // CORREÇÃO: Tratamento amigável para erro de Constraint do Banco de Dados
+            if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+                 Logger.warn(`Tentativa de check-in duplicado detectada na constraint do DB para ${qrcode}`);
+                 throw new Error(`⚠️ DUPLICIDADE: Este ingresso já registrou entrada no sistema principal.`);
+            }
+
             Logger.error('Erro no CheckinService:', error, { qrcode });
             throw error;
         }
@@ -145,11 +144,10 @@ export const CheckinService = {
         const { convTable, logsTable } = getEventTablesList(evento_id);
         const targetDescriptor = new Float32Array(descriptor);
         
-        // Fix Bug#7: Declara fora do try para ser acessível no finally
         let melhorMatch = null;
 
         try {
-            // 1. Busca Biométrica Enterprise (Cache Nível C++)
+            // 1. Busca Biométrica Enterprise (Cache)
             const bioCacheKey = `bio_cache_${evento_id}`;
             let poolBiometrico = CacheService.get(bioCacheKey);
 
@@ -165,7 +163,9 @@ export const CheckinService = {
                         poolBiometrico.push({ id: c.id, nome: c.nome, saved });
                     } catch (e) { continue; }
                 }
-                CacheService.set(bioCacheKey, poolBiometrico, 86400000); // Cache válido por 24 horas mem. limitadas
+                // CORREÇÃO PARCIAL DE MEMÓRIA: Reduzido o tempo de vida do cache se for um evento massivo. 
+                // Ideal futuro: Mover para um banco vetorial como RedisSearch ou Milvus.
+                CacheService.set(bioCacheKey, poolBiometrico, 3600000); // 1 hora
             }
 
             let menorDistancia = 0.6;
@@ -201,7 +201,6 @@ export const CheckinService = {
 
             await db.query(`UPDATE ${convTable} SET status_checkin = 1, data_entrada = IFNULL(data_entrada, NOW()) WHERE id = ?`, [melhorMatch.id]);
 
-            // 💬 ZENITH WHATSAPP CONCIERGE (Opcional - Não bloqueante)
             WhatsAppService.enviarBoasVindas(melhorMatch, evento_id).catch(e => Logger.error('FALHA_WHATSAPP_BIOMETRIA:', e));
 
             return { 
@@ -213,10 +212,14 @@ export const CheckinService = {
                 isSuspicious: fraud.isSuspicious
             };
         } catch (error) {
+            // Tratamento amigável para erro de Constraint (Caso aconteça via FaceID)
+            if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+                Logger.warn(`Biometria repetida detectada na constraint do DB para convidado ID ${melhorMatch?.id}`);
+                throw new Error(`⚠️ DUPLICIDADE: Rosto já processado.`);
+            }
             Logger.error('Erro no CheckinService (Biometria):', error);
             throw error;
         } finally {
-            // Fix Bug#7: melhorMatch agora está no escopo correto
             if (melhorMatch) {
               registrarLog(null, 'CHECKIN_FACE', `Biometria: ${melhorMatch.nome} | ID: ${melhorMatch.id} | Evento: ${evento_id} | IP: ${ip}`, ip);
             }

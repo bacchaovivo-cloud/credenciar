@@ -1,20 +1,16 @@
 import mysql from 'mysql2/promise';
 import crypto from 'crypto';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { generateSignature, checkFraudHeuristics } from '../utils/forensic.js';
 
-// Fix: carrega .env de forma independente — garante credenciais corretas mesmo antes do env.js ser importado
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+// 🔐 CORREÇÃO: Importando o env validado pelo Zod. 
+// Isso substitui a necessidade de carregar o dotenv manualmente aqui e elimina os fallbacks inseguros.
+import { env } from '../config/env.js';
 
 const db = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASS || '',
-  database: process.env.DB_NAME || 'bacch_sistema',
+  host: env.DB_HOST,
+  user: env.DB_USER,
+  password: env.DB_PASS || '', // Mantido o fallback de string vazia apenas caso o root local não tenha senha
+  database: env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10
 });
