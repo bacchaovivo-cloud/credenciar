@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
 export const Skeleton = ({ className }) => (
@@ -5,6 +6,12 @@ export const Skeleton = ({ className }) => (
 );
 
 export const DashboardSkeleton = () => {
+  // Fix: useMemo garante que as alturas são calculadas UMA vez e não mudam a cada re-render
+  const barHeights = useMemo(
+    () => [1, 2, 3, 4, 5, 6, 7, 8].map(() => 20 + Math.random() * 80),
+    []
+  );
+
   return (
     <div className="p-4 md:p-8 w-full max-w-[1400px] mx-auto space-y-6">
       
@@ -43,8 +50,8 @@ export const DashboardSkeleton = () => {
               <Skeleton className="h-6 w-32 rounded-md" />
             </div>
             <div className="flex items-end justify-between flex-1 gap-3">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <Skeleton key={i} className="flex-1 rounded-t-sm" style={{ height: `${20 + Math.random() * 80}%` }} />
+              {barHeights.map((h, i) => (
+                <Skeleton key={i} className="flex-1 rounded-t-sm" style={{ height: `${h}%` }} />
               ))}
             </div>
           </div>

@@ -9,8 +9,6 @@ const BASE_URL = import.meta.env.VITE_API_URL || (
 export const apiRequest = async (endpoint, body = null, method = null) => {
   const url = `${BASE_URL}/${endpoint}`;
   
-  // Mantemos a leitura do storage por enquanto como "fallback" para não quebrar 
-  // o sistema durante a transição, mas a meta é que isso suma no futuro.
   const token = localStorage.getItem('userToken');
   
   const options = {
@@ -19,8 +17,7 @@ export const apiRequest = async (endpoint, body = null, method = null) => {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     },
-    // 🔐 CORREÇÃO: Esta é a linha mágica. Ela instrui o navegador a anexar 
-    // automaticamente os cookies httpOnly (como o seu JWT) em todas as requisições.
+    // Envia cookies httpOnly junto com todas as requisições
     credentials: 'include'
   };
 
@@ -28,18 +25,25 @@ export const apiRequest = async (endpoint, body = null, method = null) => {
 
   try {
     const response = await fetch(url, options);
+
     let data;
     try {
       data = await response.json();
     } catch (err) {
       data = { success: false, message: 'Falha ao processar resposta do servidor.' };
     }
-    
-    // Sessão expirada: limpa e redireciona
-    if (response.status === 401 || response.status === 403) {
-      if (data.message?.includes('Token Rejeitado') || data.message?.includes('Token não fornecido')) {
+
+    // Fix: 401 (token inválido/expirado) desloga o usuário.
+    // 403 (sem permissão de role) NÃO desloga — apenas devolve o erro para a UI tratar.
+    if (response.status === 401) {
+      const isTokenError = 
+        data.message?.includes('Token Rejeitado') || 
+        data.message?.includes('Token não fornecido') ||
+        data.message?.includes('Sessão');
+
+      if (isTokenError) {
         localStorage.removeItem('userToken');
-        localStorage.removeItem('token'); 
+        localStorage.removeItem('token');
         localStorage.removeItem('userRole');
         localStorage.removeItem('userName');
         localStorage.removeItem('userPermissions');
@@ -48,10 +52,12 @@ export const apiRequest = async (endpoint, body = null, method = null) => {
       }
     }
 
+    // 403 por insuficiência de role: retorna o erro normalmente para a UI exibir feedback
+    // sem deslogar o usuário (ex: HOSTESS tentando acessar rota de ADMIN)
     return data;
   } catch (err) {
     console.warn(`⚠️ [OFFLINE-MODE] Falha em ${endpoint}:`, err.message);
     // O modo offline é gerenciado pelo useCheckinFlow + ZenithEdge (dbLocal.js)
     return { success: false, message: 'Erro de conexão com o servidor.', offline: true };
   }
-}
+};

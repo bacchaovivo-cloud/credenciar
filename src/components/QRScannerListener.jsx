@@ -8,9 +8,13 @@ import { useEffect, useRef } from 'react';
  */
 const QRScannerListener = ({ onScan, delay = 50, suffix = 'Enter' }) => {
   const buffer = useRef('');
-  const lastKeyTime = useRef(Date.now());
+  // Fix: inicializado como null e setado dentro do effect — evita chamar Date.now() durante render
+  const lastKeyTime = useRef(null);
 
   useEffect(() => {
+    // Inicializa o timestamp aqui, dentro do effect, onde efeitos colaterais são permitidos
+    lastKeyTime.current = Date.now();
+
     const handleKeyDown = (e) => {
       const now = Date.now();
       

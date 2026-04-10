@@ -53,6 +53,7 @@ export const getConvidados = async (req, res) => {
   const [countResult] = await db.query(`SELECT COUNT(id) as total FROM ${convTable} ${queryWhere}`, queryParams);
   const total = countResult[0].total;
 
+  // Fix: eventoId passado como parâmetro ? na subquery em vez de interpolado diretamente
   const [rows] = await db.query(
     `SELECT id, nome, qrcode, categoria, evento_id, cpf, telefone, email, status_checkin, data_entrada, 
      (SELECT GROUP_CONCAT(DATE_FORMAT(data_ponto, '%Y-%m-%d')) FROM ${logsTable} WHERE convidado_id = ${convTable}.id) as dias_ponto_raw,
@@ -195,7 +196,6 @@ export const check = async (req, res) => {
      res.json(result);
   } catch (error) {
      Logger.error('Erro ao registrar check-in via Controller:', error);
-     // ✅ CORREÇÃO: Status 400 para erros de regra de negócio
      res.status(400).json({ 
         success: false, 
         message: error.message 
@@ -240,7 +240,6 @@ export const checkinFace = async (req, res) => {
      res.json(result);
   } catch (error) {
      Logger.error('Erro no checkinFace via Controller:', error);
-     // ✅ CORREÇÃO: Status 400 para erros de negócio ou biometria não reconhecida
      res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -253,13 +252,12 @@ export const updateFaceDescriptor = async (req, res) => {
 
     if (!descriptor) return res.json({ success: false, message: 'DESCRIÇÃO BIOMÉTRICA AUSENTE' });
 
-    // Update the record
     await db.query(
       `UPDATE ${convTable} SET face_descriptor = ? WHERE id = ?`,
       [JSON.stringify(descriptor), id]
     );
 
-    // Invalida o Cache Biomêtrico da Memória para forçar releitura (Otimização Enterprise)
+    // Invalida o Cache Biométrico da Memória para forçar releitura
     CacheService.delete(`bio_cache_${eventoId}`);
 
     registrarLog(req.user?.id, 'CADASTRO_FACE', `Convidado ID: ${id} (Evento: ${eventoId})`, req.ip);
@@ -310,32 +308,26 @@ export const checkinMassa = async (req, res) => {
 
 export const desfazerCheckin = async (req, res) => {
   const { id, eventoId } = req.params;
-  const { data_ponto } = req.query; // Novo parâmetro opcional para desfazer um dia específico
+  const { data_ponto } = req.query;
   const { convTable, logsTable } = getEventTablesList(eventoId);
 
   try {
     if (data_ponto) {
-      // 1. Remove apenas o log do dia específico (Blindagem Total de Fuso Horário)
-      // Usamos DATE_FORMAT para paridade absoluta entre Frontend (YYYY-MM-DD) e DB
       const [delResult] = await db.query(
         `DELETE FROM ${logsTable} WHERE convidado_id = ? AND DATE_FORMAT(data_ponto, '%Y-%m-%d') = ?`, 
         [id, data_ponto]
       );
       console.log(`🗑️ [Undo] Convidado: ${id} | Dia: ${data_ponto} | Removidos: ${delResult.affectedRows}`);
       
-      // 2. Verifica se ainda restam outros bipes para este convidado
       const [logsRestantes] = await db.query(`SELECT id, data_ponto FROM ${logsTable} WHERE convidado_id = ? ORDER BY criado_em ASC`, [id]);
       
       if (logsRestantes.length === 0) {
-        // Se não sobrou nada, reset completo
         await db.query(`UPDATE ${convTable} SET status_checkin = 0, data_entrada = NULL WHERE id = ?`, [id]);
       } else {
-        // Se ainda existem bipes, mantém status_checkin = 1 e atualiza data_entrada para o primeiro bipe que sobrou
         await db.query(`UPDATE ${convTable} SET status_checkin = 1, data_entrada = (SELECT criado_em FROM ${logsTable} WHERE convidado_id = ? ORDER BY criado_em ASC LIMIT 1) WHERE id = ?`, [id, id]);
       }
       registrarLog(req.user.id, 'DESFAZER_CHECKIN_PARCIAL', `Convidado ID: ${id} Dia: ${data_ponto} (Evento: ${eventoId})`, req.ip);
     } else {
-      // Comportamento Full Reset (se não passar data_ponto)
       await db.query(`UPDATE ${convTable} SET status_checkin = 0, data_entrada = NULL WHERE id = ?`, [id]);
       await db.query(`DELETE FROM ${logsTable} WHERE convidado_id = ?`, [id]);
       registrarLog(req.user.id, 'DESFAZER_CHECKIN_TOTAL', `Convidado ID: ${id} (Evento: ${eventoId})`, req.ip);
@@ -351,6 +343,7 @@ export const exportarCSV = async (req, res) => {
   const { eventoId } = req.params;
   const { convTable, logsTable } = getEventTablesList(eventoId);
   try {
+    // Fix: eventoId passado como parâmetro ? na subquery
     const [rows] = await db.query(
       `SELECT nome, cpf, categoria, status_checkin, data_entrada,
        (SELECT GROUP_CONCAT(CONCAT(IFNULL(CONCAT('Dia ', LPAD(DATEDIFF(data_ponto, (SELECT data_inicio FROM eventos WHERE id = ?)) + 1, 2, '0'), ': '), ''), DATE_FORMAT(criado_em, '%d/%m/%Y %H:%i:%s')) ORDER BY criado_em ASC SEPARATOR ' | ') FROM ${logsTable} WHERE convidado_id = ${convTable}.id) as dias_presente
@@ -376,7 +369,7 @@ export const exportarCSV = async (req, res) => {
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename=relatorio_checkin_${eventoId}.csv`);
-    // Corrigindo BOM para Excel reconhecer caracteres especiais (Ex: ç, ã)
+    // BOM para Excel reconhecer caracteres especiais (ç, ã)
     res.write('\uFEFF');
     res.write(csv);
     res.end();
@@ -412,6 +405,7 @@ export const exportarXLSX = async (req, res) => {
   const { eventoId } = req.params;
   const { convTable, logsTable } = getEventTablesList(eventoId);
   
+  // Fix: eventoId passado como parâmetro ? na subquery
   const [rows] = await db.query(
     `SELECT nome, cpf, telefone, qrcode, categoria, CASE WHEN status_checkin=1 THEN "Sim" ELSE "Não" END as presente, data_entrada,
      (SELECT GROUP_CONCAT(CONCAT(IFNULL(CONCAT('Dia ', LPAD(DATEDIFF(data_ponto, (SELECT data_inicio FROM eventos WHERE id = ?)) + 1, 2, '0'), ': '), ''), DATE_FORMAT(criado_em, '%d/%m/%Y %H:%i:%s')) ORDER BY criado_em ASC SEPARATOR ' | ') FROM ${logsTable} WHERE convidado_id = ${convTable}.id) as dias_presente
@@ -476,14 +470,14 @@ export const importarEmMassa = async (req, res) => {
             c.cpf || null,
             c.email || null,
             c.categoria || 'GERAL',
-            `BACCH_${crypto.randomUUID().replace(/-/g, '').toUpperCase()}`, 
+            `BACCH_${crypto.randomUUID().replace(/-/g, '').toUpperCase()}`,
             0 // status_checkin
         ]);
 
         const query = `INSERT IGNORE INTO ${convTable} (nome, cpf, email, categoria, qrcode, status_checkin) VALUES ?`;
         const [result] = await db.query(query, [values]);
 
-        Logger.info(`Importação Smart concluída: ${result.affectedRows} novos registros no evento ${eventoId}`);
+        Logger.info(`Importação em massa concluída: ${result.affectedRows} novos registros no evento ${eventoId}`);
         res.json({ 
             success: true, 
             message: `${result.affectedRows} convidados importados com sucesso.`,
