@@ -3,9 +3,29 @@ import { eventoSchema } from '../validations/schemas.js';
 import { Logger } from '../utils/logger.js';
 import db from '../config/db.js';
 
+// Importações de Segurança para os Uploads
+import { fileTypeFromFile } from 'file-type';
+import fs from 'fs';
+
 /**
  * 👑 EVENTOS CONTROLLER (Enterprise Refactored)
  */
+
+// 🔒 CORREÇÃO CRÍTICA: Rota pública que não vaza configurações ou dados sensíveis
+export const getPublicEvents = async (req, res) => {
+  try {
+    // Busca direto no banco apenas os campos necessários para vitrine/venda.
+    // Adapte o "status" conforme as regras de negócio do seu banco (ex: 'ATIVO').
+    const [rows] = await db.query(
+      'SELECT id, nome, data, local, logo_url, background_url FROM eventos ORDER BY data ASC'
+    );
+    res.json({ success: true, dados: rows });
+  } catch (error) {
+    Logger.error('Erro ao listar eventos públicos:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao buscar eventos.' });
+  }
+};
+
 export const getEventos = async (req, res) => {
   try {
     const dados = await EventoService.listarTodos();
@@ -84,11 +104,16 @@ export const deleteSetor = async (req, res) => {
 export const uploadLogo = async (req, res) => {
   const { id } = req.params;
   if (!req.file) return res.status(400).json({ success: false, message: 'Nenhum arquivo enviado' });
-  if (!req.file.mimetype.startsWith('image/')) {
-    return res.status(400).json({ success: false, message: 'Arquivo inválido. Apenas imagens são permitidas.' });
+
+  const filePath = req.file.path;
+
+  // 🔒 CORREÇÃO MÉDIA: Validação real do conteúdo do arquivo (Magic Bytes)
+  const meta = await fileTypeFromFile(filePath);
+  if (!meta || !meta.mime.startsWith('image/')) {
+    fs.unlinkSync(filePath); // Exclui o script malicioso disfarçado de imagem do disco
+    return res.status(400).json({ success: false, message: 'Arquivo malicioso ou formato inválido detectado.' });
   }
 
-  
   const logoUrl = `/uploads/${req.file.filename}`;
   await db.query('UPDATE eventos SET logo_url = ? WHERE id = ?', [logoUrl, id]);
   res.json({ success: true, url: logoUrl });
@@ -97,11 +122,16 @@ export const uploadLogo = async (req, res) => {
 export const uploadBackground = async (req, res) => {
   const { id } = req.params;
   if (!req.file) return res.status(400).json({ success: false, message: 'Nenhum arquivo enviado' });
-  if (!req.file.mimetype.startsWith('image/')) {
-    return res.status(400).json({ success: false, message: 'Arquivo inválido. Apenas imagens são permitidas.' });
+
+  const filePath = req.file.path;
+
+  // 🔒 CORREÇÃO MÉDIA: Validação real do conteúdo do arquivo (Magic Bytes)
+  const meta = await fileTypeFromFile(filePath);
+  if (!meta || !meta.mime.startsWith('image/')) {
+    fs.unlinkSync(filePath); // Exclui o arquivo falso
+    return res.status(400).json({ success: false, message: 'Arquivo malicioso ou formato inválido detectado.' });
   }
 
-  
   const bgUrl = `/uploads/${req.file.filename}`;
   await db.query('UPDATE eventos SET background_url = ? WHERE id = ?', [bgUrl, id]);
   res.json({ success: true, url: bgUrl });

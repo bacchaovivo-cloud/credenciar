@@ -13,7 +13,8 @@ import { apiKeyOrToken } from '../middlewares/apiKeyMiddleware.js';
 const router = Router();
 
 // 🩺 ZENITH HEARTBEAT
-router.post('/station/ping', (req, res) => {
+// 🔒 CORREÇÃO: Middleware apiKeyOrToken(verifyToken) aplicado para evitar falsificação de status
+router.post('/station/ping', apiKeyOrToken(verifyToken), (req, res) => {
     const { stationId, type, status } = req.body;
     StationService.reportStatus(stationId, type || 'TOTEM', status || 'ACTIVE');
     res.sendStatus(200);

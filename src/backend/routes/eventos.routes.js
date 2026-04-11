@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { 
-  getEventos, getEventoById, createEvento, updateEvento, deleteEvento, 
+  getEventos, getPublicEvents, getEventoById, createEvento, updateEvento, deleteEvento, 
   getSetores, addSetor, deleteSetor, 
   uploadLogo, uploadBackground, 
   getLabelConfig, updateLabelConfig 
@@ -41,8 +41,13 @@ const upload = multer({
 
 const router = Router();
 
+// --- ROTA PÚBLICA (Deve vir antes do /:id para não dar conflito) ---
+// 🔒 CORREÇÃO: Rota específica para a tela de vendas (sem vazar dados sensíveis)
+router.get('/public', asyncHandler(getPublicEvents));
+
 // --- CRUDS BÁSICOS ---
-router.get('/', asyncHandler(getEventos));
+// 🔒 CORREÇÃO: verifyToken adicionado. Agora ninguém puxa o banco de eventos sem login.
+router.get('/', verifyToken, asyncHandler(getEventos));
 router.get('/:id', verifyToken, asyncHandler(getEventoById));
 router.post('/', verifyToken, checkRole(['ADMIN', 'MANAGER']), asyncHandler(createEvento));
 router.put('/:id', verifyToken, checkRole(['ADMIN', 'MANAGER']), asyncHandler(updateEvento));
