@@ -161,6 +161,14 @@ export const check = async (req, res) => {
   const { qrcode, evento_id, photo, station_id, printer_ip, printer_port, data_ponto } = parsed.data;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
+  // 🔒 TOTEM SECURITY HARDENING: Garante isolamento entre eventos para totens
+  if (req.user?.role === 'TOTEM' && req.user.evento_atribuido) {
+    if (Number(evento_id) !== Number(req.user.evento_atribuido)) {
+      Logger.warn(`󰒃 [Totem Isolation Bypass Attempt] Totem assign to ${req.user.evento_atribuido} tried check-in for event ${evento_id}`, { ip });
+      return res.status(403).json({ success: false, message: 'Acesso Negado: Dispositivo não autorizado para este evento.' });
+    }
+  }
+
   try {
      const result = await CheckinService.processarCheckin({
         qrcode,
@@ -210,6 +218,13 @@ export const check = async (req, res) => {
 export const checkinFace = async (req, res) => {
   const { descriptor, evento_id, photo } = req.body;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+  // 🔒 TOTEM SECURITY HARDENING
+  if (req.user?.role === 'TOTEM' && req.user.evento_atribuido) {
+    if (Number(evento_id) !== Number(req.user.evento_atribuido)) {
+      return res.status(403).json({ success: false, message: 'Acesso Negado: Dispositivo não autorizado para este evento.' });
+    }
+  }
 
   try {
      const result = await CheckinService.processarCheckinBiometrico({
@@ -277,6 +292,13 @@ export const checkinMassa = async (req, res) => {
     checkins = parsed.checkins;
   } catch (e) {
     return res.status(400).json({ success: false, message: 'Payload de sync inválido', errors: e.errors });
+  }
+
+  // 🔒 TOTEM SECURITY HARDENING
+  if (req.user?.role === 'TOTEM' && req.user.evento_atribuido) {
+    if (Number(eventoId) !== Number(req.user.evento_atribuido)) {
+       return res.status(403).json({ success: false, message: 'Acesso Negado: Dispositivo não autorizado para este evento.' });
+    }
   }
 
   const results = { sucessos: 0, falhas: 0 };

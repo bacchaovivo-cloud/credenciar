@@ -23,6 +23,6 @@ router.use('/admin/webhooks', webhooksRoutes);
 
 // Aliases de retrocompatibilidade
 router.get('/stats-consolidado', (req, res, next) => { req.url = '/consolidado'; zenithRoutes(req, res, next); });
-router.get('/listar_eventos', (req, res, next) => { req.url = '/'; eventosRoutes(req, res, next); });
+router.get('/listar_eventos', verifyToken, (req, res, next) => { req.url = '/'; eventosRoutes(req, res, next); });
 
 export default router;

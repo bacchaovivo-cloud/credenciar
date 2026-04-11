@@ -1,7 +1,8 @@
 import express from 'express';
 import { registrarECredenciar, statusFila, reimprimirCheckin, testarImpressora } from '../controllers/impressaoController.js';
 // 1. Adicionado a importação do apiKeyOrToken (ajuste o caminho se ele estiver em outro arquivo, como apiKeyMiddleware.js)
-import { verifyToken, apiKeyOrToken } from '../middlewares/authMiddleware.js'; 
+import { verifyToken } from '../middlewares/authMiddleware.js'; 
+import { apiKeyOrToken } from '../middlewares/apiKeyMiddleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = express.Router();

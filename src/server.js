@@ -6,6 +6,8 @@ import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import helmet from 'helmet';
+
 
 import { env } from './backend/config/env.js'; 
 import db, { migrate } from './backend/config/db.js';
@@ -37,20 +39,22 @@ const io = new Server(httpServer, {
 
 app.set('io', io);
 
-// 🛡️ SECURITY HEADERS (Manual Blindage)
-app.use((req, res, next) => {
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  // CSP: em produção remove unsafe-inline/unsafe-eval; em dev permissivo para HMR
-  if (env.NODE_ENV === 'production') {
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src * data: blob:; connect-src 'self' wss:;");
-  } else {
-    res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://* data: blob:; img-src * data: blob:;");
-  }
-  next();
-});
+// 🛡️ SECURITY HEADERS (Elite Hardening via Helmet)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "img-src": ["'self'", "data:", "blob:", "*"],
+      "connect-src": ["'self'", "wss:", "https:", "http:"],
+      "script-src": env.NODE_ENV === 'production' 
+        ? ["'self'"] 
+        : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      "style-src": ["'self'", "'unsafe-inline'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Permite carregar recursos de diferentes origens sem headers strict COEP
+}));
+
 
 app.use(globalLimiter);
 app.use(cors({
