@@ -2,24 +2,24 @@ import { useState, useEffect, createContext, useContext, useCallback, useRef } f
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * 🔔 ZENITH TOAST SYSTEM: Premium notification & confirmation system
- * Replaces all native alert() and window.confirm() with a polished UI.
+ * 🔔 ZENITH TOAST SYSTEM (Bento Box UI)
+ * Premium notification & confirmation system
  */
 
 const ToastContext = createContext(null);
 
 const ICONS = {
-  success: 'bi-check-circle-fill',
-  error: 'bi-x-circle-fill',
+  success: 'bi-check-lg',
+  error: 'bi-x-lg',
   warning: 'bi-exclamation-triangle-fill',
-  info: 'bi-info-circle-fill',
+  info: 'bi-info-lg',
 };
 
 const COLORS = {
-  success: { bg: 'bg-emerald-500', ring: 'ring-emerald-500/20', text: 'text-emerald-500', glow: 'shadow-emerald-500/20' },
-  error: { bg: 'bg-red-500', ring: 'ring-red-500/20', text: 'text-red-500', glow: 'shadow-red-500/20' },
-  warning: { bg: 'bg-amber-500', ring: 'ring-amber-500/20', text: 'text-amber-500', glow: 'shadow-amber-500/20' },
-  info: { bg: 'bg-sky-500', ring: 'ring-sky-500/20', text: 'text-sky-500', glow: 'shadow-sky-500/20' },
+  success: { border: 'border-emerald-500/30', text: 'text-emerald-400', icon: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
+  error: { border: 'border-red-500/30', text: 'text-red-400', icon: 'bg-red-500/10 text-red-500 border-red-500/20' },
+  warning: { border: 'border-amber-500/30', text: 'text-amber-400', icon: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
+  info: { border: 'border-blue-500/30', text: 'text-blue-400', icon: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
 };
 
 // ─── Toast Item ───────────────────────────────────────────────
@@ -36,23 +36,23 @@ function ToastItem({ toast, onDismiss }) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 30, scale: 0.9 }}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, x: 80, scale: 0.8 }}
-      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-      className={`flex items-center gap-4 px-5 py-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl ${color.glow} ring-1 ${color.ring} max-w-md w-full cursor-pointer group`}
+      exit={{ opacity: 0, x: 50, scale: 0.95 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className={`flex items-start gap-3 p-3 bg-[#1a2333] border ${color.border} rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-sm w-full cursor-pointer group`}
       onClick={() => onDismiss(toast.id)}
     >
-      <div className={`w-10 h-10 ${color.bg} rounded-xl flex items-center justify-center text-white text-lg flex-shrink-0 shadow-md`}>
+      <div className={`w-8 h-8 rounded border flex items-center justify-center text-sm flex-shrink-0 ${color.icon}`}>
         <i className={`bi ${ICONS[toast.type] || ICONS.info}`}></i>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-slate-800 dark:text-white leading-snug truncate">{toast.message}</p>
+      <div className="flex-1 min-w-0 pt-0.5">
+        <p className="text-[11px] font-bold text-white leading-snug truncate uppercase tracking-wide">{toast.message}</p>
         {toast.description && (
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{toast.description}</p>
+          <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-widest truncate">{toast.description}</p>
         )}
       </div>
-      <div className="text-slate-300 dark:text-slate-600 group-hover:text-slate-500 transition text-xs flex-shrink-0">
+      <div className="text-slate-500 group-hover:text-white transition-colors text-[10px] p-1 flex-shrink-0">
         <i className="bi bi-x-lg"></i>
       </div>
     </motion.div>
@@ -68,41 +68,42 @@ function ConfirmDialog({ confirm, onResolve }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-[#0f1522]/90 backdrop-blur-sm"
     >
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => onResolve(false)} />
+      <div className="absolute inset-0" onClick={() => onResolve(false)} />
       <motion.div
-        initial={{ scale: 0.9, y: 20 }}
+        initial={{ scale: 0.95, y: 10 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 10 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="relative bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 p-8 max-w-md w-full"
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="relative bg-[#1a2333] rounded-xl shadow-2xl border border-[#2a374a] p-6 max-w-sm w-full"
       >
-        <div className={`w-16 h-16 ${color.bg} rounded-2xl flex items-center justify-center text-white text-3xl mx-auto mb-6 shadow-lg ${color.glow}`}>
-          <i className={`bi ${confirm.danger ? 'bi-exclamation-triangle-fill' : 'bi-question-circle-fill'}`}></i>
+        <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl mx-auto mb-5 border ${color.icon}`}>
+          <i className={`bi ${confirm.danger ? 'bi-exclamation-triangle-fill' : 'bi-question-lg'}`}></i>
         </div>
 
         {confirm.title && (
-          <h3 className="text-xl font-black text-slate-900 dark:text-white text-center mb-2 uppercase tracking-tight">
+          <h3 className="text-sm font-bold text-white text-center mb-2 uppercase tracking-widest">
             {confirm.title}
           </h3>
         )}
 
-        <p className="text-sm text-slate-600 dark:text-slate-300 text-center leading-relaxed mb-8 font-medium">
+        <p className="text-[11px] text-slate-400 text-center leading-relaxed mb-6 font-bold uppercase tracking-wider">
           {confirm.message}
         </p>
 
         <div className="flex gap-3">
           <button
             onClick={() => onResolve(false)}
-            className="flex-1 py-3.5 px-6 rounded-2xl border-2 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold text-sm uppercase tracking-wide hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95"
+            className="flex-1 py-2.5 px-4 rounded-lg border border-[#2a374a] bg-[#0f1522] text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:bg-[#2a374a] hover:text-white transition-colors"
           >
             Cancelar
           </button>
           <button
             onClick={() => onResolve(true)}
-            className={`flex-1 py-3.5 px-6 rounded-2xl ${confirm.danger ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : 'bg-sky-500 hover:bg-sky-600 shadow-sky-500/20'} text-white font-bold text-sm uppercase tracking-wide shadow-lg transition-all active:scale-95`}
+            className={`flex-1 py-2.5 px-4 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-colors flex items-center justify-center gap-2 ${confirm.danger ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
           >
+            {confirm.danger && <i className="bi bi-trash3-fill text-xs"></i>}
             {confirm.confirmText || 'Confirmar'}
           </button>
         </div>
@@ -151,7 +152,7 @@ export function ToastProvider({ children }) {
         confirmText: options.confirmText || 'Confirmar',
       });
     });
-  }, []);
+  });
 
   const handleResolve = useCallback((value) => {
     if (resolveRef.current) {
@@ -166,7 +167,7 @@ export function ToastProvider({ children }) {
       {children}
 
       {/* Toast Container */}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col-reverse gap-3 pointer-events-none">
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col-reverse gap-2 pointer-events-none">
         <AnimatePresence mode="popLayout">
           {toasts.map(t => (
             <div key={t.id} className="pointer-events-auto">
@@ -186,12 +187,11 @@ export function ToastProvider({ children }) {
 
 /**
  * Hook to use the toast & confirm system.
- * 
- * Usage:
- *   const { toast, confirm } = useToast();
- *   toast.success('Salvo!');
- *   toast.error('Falha ao conectar');
- *   const ok = await confirm('Deseja excluir?', { danger: true, confirmText: 'Excluir' });
+ * * Usage:
+ * const { toast, confirm } = useToast();
+ * toast.success('Salvo!');
+ * toast.error('Falha ao conectar');
+ * const ok = await confirm('Deseja excluir?', { danger: true, confirmText: 'Excluir' });
  */
 export function useToast() {
   const ctx = useContext(ToastContext);

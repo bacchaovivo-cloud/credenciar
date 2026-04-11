@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /**
  * 🗺️ ZENITH PREDICTOR: DENSITY HEATMAP
@@ -26,17 +26,19 @@ export default function ZenithHeatmap({ data }) {
   }, [gates, data]);
 
   return (
-    <div className="relative w-full aspect-video bg-slate-950/50 rounded-[3rem] border border-white/5 overflow-hidden p-8">
+    <div className="relative w-full aspect-video bg-[#1a2333] rounded-xl border border-[#2a374a] overflow-hidden p-5 flex flex-col">
       {/* Grid de fundo técnico */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+      <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
       
       {/* Legenda */}
-      <div className="absolute top-6 left-8 flex flex-col gap-1">
-        <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest">Digital Twin: Event Perimeter</span>
-        <span className="text-[8px] font-bold text-slate-500 uppercase">Live Density Analysis</span>
+      <div className="absolute top-5 left-6 flex flex-col gap-1 z-20">
+        <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest flex items-center gap-1.5">
+            <i className="bi bi-radar"></i> Digital Twin: Perimeter
+        </span>
+        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Live Density Analysis</span>
       </div>
 
-      <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="relative z-10">
+      <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="relative z-10 flex-1 mt-4">
         {/* Conexões simuladas (Malha Digital) */}
         {heatmapData.map((gate, i) => (
            heatmapData.slice(i + 1).map((other, j) => (
@@ -44,16 +46,15 @@ export default function ZenithHeatmap({ data }) {
                 key={`${i}-${j}`}
                 x1={gate.x} y1={gate.y} 
                 x2={other.x} y2={other.y} 
-                stroke="white" 
-                strokeWidth="0.05" 
-                strokeOpacity="0.1" 
+                stroke="#2a374a" 
+                strokeWidth="0.3" 
              />
            ))
         ))}
 
         {/* Pontos de Calor */}
         {heatmapData.map(gate => {
-          const color = gate.intensity > 15 ? '#ef4444' : (gate.intensity > 8 ? '#f59e0b' : '#0ea5e9');
+          const color = gate.intensity > 15 ? '#ef4444' : (gate.intensity > 8 ? '#f59e0b' : '#3b82f6');
           const scale = 1 + (gate.intensity / 20);
           
           return (
@@ -64,23 +65,22 @@ export default function ZenithHeatmap({ data }) {
                 r={4 * scale} 
                 fill={color} 
                 initial={{ opacity: 0.1 }}
-                animate={{ opacity: [0.1, 0.3, 0.1], r: [4 * scale, 6 * scale, 4 * scale] }}
+                animate={{ opacity: [0.1, 0.3, 0.1], r: [4 * scale, 5.5 * scale, 4 * scale] }}
                 transition={{ duration: 3, repeat: Infinity }}
               />
               {/* Núcleo do Heatmap */}
               <circle 
                 cx={gate.x} cy={gate.y} 
-                r={1} 
+                r={1.2} 
                 fill={color} 
-                className="shadow-[0_0_10px_rgba(255,255,255,0.5)]"
               />
               
               {/* Label flutuante sútil */}
               <text 
-                x={gate.x + 2} y={gate.y - 2} 
-                fill="white" 
-                fontSize="2" 
-                className="font-black opacity-30 select-none uppercase tracking-tighter"
+                x={gate.x + 2.5} y={gate.y + 0.5} 
+                fill="#94a3b8" 
+                fontSize="2.5" 
+                className="font-bold uppercase tracking-widest select-none"
               >
                 {gate.name}
               </text>
@@ -90,14 +90,21 @@ export default function ZenithHeatmap({ data }) {
       </svg>
 
       {/* Alerta de Overload */}
+      <AnimatePresence>
       {heatmapData.some(g => g.intensity > 15) && (
-        <div className="absolute bottom-6 right-8 animate-bounce">
-            <div className="px-4 py-2 bg-red-500/10 border border-red-500/50 rounded-xl text-red-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                <i className="bi bi-exclamation-triangle-fill"></i>
-                Setor de Risco Detectado
+        <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="absolute bottom-5 right-5 z-20"
+        >
+            <div className="px-3 py-1.5 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg">
+                <i className="bi bi-exclamation-triangle-fill animate-pulse"></i>
+                Risco Detectado
             </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
