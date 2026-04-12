@@ -7,7 +7,8 @@ import { Logger } from '../utils/logger.js';
  */
 export const auditAction = (acaoOverride = null) => async (req, res, next) => {
   const originalJson = res.json;
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  // 🔒 FIX ALTO-01: req.ip é resolvido corretamente pelo Express via trust proxy
+  const ip = req.ip;
   const userAgent = req.get('User-Agent');
 
   // Intercepta a resposta para registrar APENAS SUCESSOS

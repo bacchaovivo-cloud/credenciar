@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { 
   login, 
   login2Step,
+  logout,
   getUsuarios, 
   createUsuario, 
   updateUsuario, 
@@ -18,6 +19,9 @@ const router = Router();
 
 router.post('/login', authLimiter, login);
 router.post('/login/2step', authLimiter, login2Step); // Fix: Rate limit para prevenir brute-force de TOTP
+
+// 🔒 FIX ALTO-06: Logout exige token válido para poder adicioná-lo na blacklist
+router.post('/logout', verifyToken, logout);
 
 // Configuração de 2FA (Zenith Excellence)
 router.post('/2fa/generate', verifyToken, generate2FASetup);

@@ -11,12 +11,12 @@ class SocketService {
   connect() {
     if (this.socket) return;
 
-    const token = localStorage.getItem('userToken');
-
+    // 🔐 FIX ARQU-01: Não usa localStorage. O cookie httpOnly é enviado automaticamente
+    // pelo browser com `withCredentials: true`. O servidor valida via middleware.
     this.socket = io(SOCKET_URL, {
       transports: ['websocket'],
       reconnectionAttempts: 5,
-      auth: { token }
+      withCredentials: true,  // Envia o cookie httpOnly automaticamente
     });
 
     this.socket.on('checkin', (data) => {

@@ -55,17 +55,23 @@ export const checkinMassaSchema = z.object({
   checkins: z.array(
     z.object({
       qrcode: z.string(),
-      // Fix regressão: data_entrada deve ser opcional — check-ins offline simples não incluem timestamp
       data_entrada: z.string().optional().nullable(),
       data_ponto: z.string().optional().nullable()
     })
   )
 });
 
+// 🔒 FIX ALTO-02: Política de senha robusta
+const senhaSchema = z.string()
+  .min(10, "Senha deve ter ao menos 10 caracteres")
+  .regex(/[A-Z]/, "Deve conter ao menos uma letra maiúscula")
+  .regex(/[0-9]/, "Deve conter ao menos um número")
+  .regex(/[^A-Za-z0-9]/, "Deve conter ao menos um caractere especial (!@#$%^&*)");
+
 export const usuarioSchema = z.object({
   nome: z.string().min(3, "Nome obrigatório"),
   usuario: z.string().min(3, "Usuário deve ter mínimo 3 caracteres"),
-  senha: z.string().min(6, "Senha precisa ter mínimo 6 caracteres").optional().nullable(),
+  senha: senhaSchema.optional().nullable(),
   role: z.enum(['ADMIN', 'MANAGER', 'STAFF', 'PORTARIA', 'TOTEM'], {
     errorMap: () => ({ message: "Role inserida é inválida ou de escalada não permitida." })
   }),
@@ -74,5 +80,5 @@ export const usuarioSchema = z.object({
 
 // 🔐 SECURITY: Schema específico para criação que exige senha
 export const usuarioCreateSchema = usuarioSchema.extend({
-  senha: z.string().min(6, "Senha é obrigatória na criação (mínimo 6 caracteres)")
+  senha: senhaSchema  // Obrigatória na criação
 });

@@ -61,12 +61,10 @@ export default function TotemConfigModal({ isOpen, onClose, evento, onUpdate }) 
     try {
       const endpoint = type === 'logo' ? `eventos/${evento.id}/upload-logo` : `eventos/${evento.id}/upload-bg`;
       
-      // Usando fetch direto para FormData
+      // 🔐 FIX ARQU-01: Usa credentials:include para enviar cookie httpOnly (sem localStorage)
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/${endpoint}`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('userToken')}`
-        },
+        credentials: 'include',  // Envia cookie httpOnly automaticamente
         body: formData
       });
 

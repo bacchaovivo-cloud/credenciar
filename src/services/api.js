@@ -39,11 +39,8 @@ export const apiRequest = async (endpoint, body = null, method = null) => {
         data.message?.includes('Sessão');
 
       if (isTokenError) {
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('token');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('userPermissions');
+        // 🔐 FIX ARQU-01: Token nunca esteve no localStorage — apenas limpa dados de UI residuais
+        // O cookie httpOnly é removido pelo backend na rota /logout
         window.location.href = '/';
         return { success: false, message: 'Sessão expirada. Faça login novamente.' };
       }

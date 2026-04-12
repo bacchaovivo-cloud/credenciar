@@ -13,15 +13,14 @@ export default function Login() {
   const navigate = useNavigate();
 
   const storeSession = (res) => {
-    // 🔐 HARDENING: O token NUNCA deve ser armazenado no localStorage (previne exfiltração via XSS)
-    // O backend agora utiliza cookies httpOnly para gerenciar a sessão.
-    localStorage.setItem('userRole', res.role);
-    localStorage.setItem('evento_id', res.evento_id || '');
-    localStorage.setItem('userName', res.nome);
-    localStorage.setItem('userPermissions', JSON.stringify(res.permissoes || {}));
-    
+    // 🔐 HARDENING CRÍTICO-01: Nenhum dado de autenticação é armazenado no localStorage.
+    // O token está no cookie httpOnly (seguro contra XSS).
+    // role/permissoes vivem apenas em state React (memória) — não persistem entre sessões propositalmente.
+    // O usuário é redirecionado; o App re-hidrata o estado consultando /api/me se necessário.
     const safeRole = (res.role || '').trim().toUpperCase();
-    navigate(safeRole === 'ADMIN' ? '/dashboard' : '/convidados');
+    navigate(safeRole === 'ADMIN' ? '/dashboard' : '/convidados', {
+      state: { role: res.role, nome: res.nome, evento_id: res.evento_id, permissoes: res.permissoes }
+    });
   };
 
   const handleLogin = async (e) => {

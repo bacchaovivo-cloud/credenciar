@@ -5,8 +5,9 @@ import { AuthService } from '../services/authService.js';
 import { env } from '../config/env.js';
 import { Logger } from '../utils/logger.js';
 import { usuarioSchema } from '../validations/schemas.js';
+import { blacklistToken } from '../middlewares/authMiddleware.js';
 
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = 12; // Aumentado de 10 para 12 (melhor resistência a GPU)
 const SECRET_KEY = env.JWT_SECRET;
 
 /**
@@ -16,7 +17,7 @@ const SECRET_KEY = env.JWT_SECRET;
 const setSecureCookie = (res, token) => {
   res.cookie('token', token, {
     httpOnly: true, // Impede acesso via document.cookie
-    secure: process.env.NODE_ENV === 'production', // true se estiver em HTTPS
+    secure: env.NODE_ENV === 'production', // true se estiver em HTTPS
     sameSite: 'strict', // Proteção contra CSRF
     maxAge: 24 * 60 * 60 * 1000 // 24 horas (mesmo tempo do JWT)
   });
@@ -27,7 +28,7 @@ const setSecureCookie = (res, token) => {
  */
 export const login = async (req, res) => {
   const { usuario, senha } = req.body;
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const ip = req.ip; // 🔒 FIX: Usa req.ip (resolução correta com trust proxy) em vez de x-forwarded-for manual
 
   try {
     const [rows] = await db.query('SELECT * FROM usuarios WHERE usuario = ? LIMIT 1', [usuario]);
@@ -44,7 +45,9 @@ export const login = async (req, res) => {
 
     // [ZENITH-UPGRADE] Verificação de 2FA Opcional
     if (user.two_factor_enabled) {
-      const partialToken = jwt.sign({ id: user.id, partial: true }, SECRET_KEY, { algorithm: 'HS256', expiresIn: '5m' });
+      // 🔒 FIX: Secret separada para partial token diminui superfície de ataque
+      const PARTIAL_SECRET = SECRET_KEY + '_PARTIAL_2FA_ONLY';
+      const partialToken = jwt.sign({ id: user.id, partial: true }, PARTIAL_SECRET, { algorithm: 'HS256', expiresIn: '5m' });
       return res.json({ 
         success: true, 
         require2FA: true, 
@@ -56,14 +59,14 @@ export const login = async (req, res) => {
     // Login Direto (2FA Desabilitado)
     const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, { algorithm: 'HS256', expiresIn: '24h' });
     
-    // 🔐 CORREÇÃO: Seta o token como um Cookie seguro
+    // 🔐 CORREÇÃO: Seta o token APENAS como Cookie seguro (sem expor no body)
     setSecureCookie(res, token);
     
     await registrarLog(user.id, 'LOGIN', `Login realizado com sucesso (2FA Inativo)`, ip);
 
+    // 🔒 FIX CRÍTICO: Token REMOVIDO do body. Apenas dados não sensíveis retornados.
     res.json({ 
       success: true, 
-      token, // Mantido como fallback para não quebrar frontend antigo
       role: user.role, 
       evento_id: user.evento_atribuido, 
       nome: user.nome,
@@ -80,10 +83,12 @@ export const login = async (req, res) => {
  */
 export const login2Step = async (req, res) => {
   const { partialToken, otpToken, recoveryCode } = req.body;
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const ip = req.ip;
 
   try {
-    const decoded = jwt.verify(partialToken, SECRET_KEY);
+    // 🔒 FIX: Verifica com a PARTIAL_SECRET correta
+    const PARTIAL_SECRET = SECRET_KEY + '_PARTIAL_2FA_ONLY';
+    const decoded = jwt.verify(partialToken, PARTIAL_SECRET, { algorithms: ['HS256'] });
     if (!decoded.partial) throw new Error('Token inválido');
 
     const [rows] = await db.query('SELECT * FROM usuarios WHERE id = ?', [decoded.id]);
@@ -102,14 +107,14 @@ export const login2Step = async (req, res) => {
 
     const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, { algorithm: 'HS256', expiresIn: '24h' });
     
-    // 🔐 CORREÇÃO: Seta o token como um Cookie seguro
+    // 🔐 CORREÇÃO: Seta o token APENAS como Cookie seguro (sem expor no body)
     setSecureCookie(res, token);
 
     await registrarLog(user.id, 'LOGIN_2FA', `Login com 2FA: ${recoveryCode ? 'Recuperação' : 'TOTP'}`, ip);
 
+    // 🔒 FIX CRÍTICO: Token REMOVIDO do body. Apenas dados não sensíveis retornados.
     res.json({ 
       success: true, 
-      token, 
       role: user.role, 
       evento_id: user.evento_atribuido, 
       nome: user.nome,
@@ -121,12 +126,21 @@ export const login2Step = async (req, res) => {
 };
 
 /**
- * 🚪 LOGOUT
+ * 🚪 LOGOUT — Invalida o JWT via blacklist no servidor
  */
 export const logout = async (req, res) => {
+  try {
+    // 🔒 FIX: Invalida o token no servidor via blacklist (evita uso do token mesmo após logout)
+    if (req.user) {
+      await blacklistToken(req.user);
+    }
+  } catch (e) {
+    // Não propaga erro — o cookie será limpo de qualquer forma
+  }
+  
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.NODE_ENV === 'production',
     sameSite: 'strict',
   });
   res.json({ success: true, message: 'Logout realizado com sucesso' });
@@ -145,8 +159,7 @@ export const generate2FASetup = async (req, res) => {
     // que o front-end envie um segredo forjado na próxima requisição.
     await db.query('UPDATE usuarios SET two_factor_secret = ? WHERE id = ?', [setup.secret, req.user.id]);
     
-    // Remove o 'secret' da resposta para não expor a string limpa se não for necessário
-    // (O frontend usa a URL otpauth ou o QRCode para gerar os códigos)
+    // Remove o 'secret' da resposta para não expor a string limpa
     const { secret, ...safeSetup } = setup; 
     
     res.json({ success: true, ...safeSetup });
@@ -172,21 +185,19 @@ export const verifyAndEnable2FA = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Código de verificação incorreto' });
   }
 
-  // A função enable2FA deve apenas atualizar 'two_factor_enabled = 1' e os códigos de recuperação
   await AuthService.enable2FA(req.user.id, serverSecret, recoveryCodes);
   res.json({ success: true, message: '2FA Habilitado com sucesso!' });
 };
 
 export const disable2FA = async (req, res) => {
   const { senha } = req.body;
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const ip = req.ip;
 
   try {
     if (!senha) {
       return res.status(400).json({ success: false, message: 'Senha é obrigatória para desativar o 2FA.' });
     }
 
-    // 🔐 HARDENING: Busca a senha atual para confirmar identidade antes de desativar segurança
     const [rows] = await db.query('SELECT senha, usuario FROM usuarios WHERE id = ?', [req.user.id]);
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'Usuário não encontrado' });
 
@@ -228,7 +239,6 @@ export const getUsuarios = async (req, res) => {
 
 export const createUsuario = async (req, res) => {
   try {
-    // 🔐 SECURITY: Exige senha explicitamente na criação (Fix Fallback Bacch@123)
     const { usuarioCreateSchema } = await import('../validations/schemas.js');
     const validatedData = usuarioCreateSchema.parse(req.body);
     const { nome, usuario, senha, role, permissoes } = validatedData;

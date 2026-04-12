@@ -77,8 +77,6 @@ const SmartImporterModal = ({ eventoId, categoriaPadrao, onClose, onShowAlert, o
     const batchSize = 100;
     let imported = 0;
 
-    const token = localStorage.getItem('userToken');
-
     try {
       for (let i = 0; i < total; i += batchSize) {
         const batch = data.slice(i, i + batchSize).map(row => {
@@ -93,12 +91,11 @@ const SmartImporterModal = ({ eventoId, categoriaPadrao, onClose, onShowAlert, o
           return obj;
         });
 
+        // 🔐 FIX ARQU-01: Usa credentials:include para enviar cookie httpOnly (sem localStorage)
         const response = await fetch(`${window.location.hostname === 'localhost' ? 'http://localhost:3001' : ''}/api/convidados/${eventoId}/importar`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ convidados: batch })
         });
 

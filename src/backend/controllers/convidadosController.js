@@ -11,6 +11,19 @@ import { CacheService } from '../services/cacheService.js';
 import { Logger } from '../utils/logger.js';
 import { convidadoSchema, convidadoMassaSchema, checkinMassaSchema } from '../validations/schemas.js';
 
+// 🔒 MÉDIO-06: Schema Zod para importarSmart
+const importarSmartSchema = z.object({
+  categoria: z.string().min(1).max(100),
+  convidados: z.array(z.object({
+    nome: z.string().min(2).max(255),
+    cpf: z.string().optional().nullable(),
+    telefone: z.string().max(20).optional().nullable(),
+    empresa: z.string().max(100).optional().nullable(),
+    cargo: z.string().max(100).optional().nullable(),
+    email: z.string().email().optional().nullable().or(z.literal('')),
+  })).min(1).max(5000, 'Máximo 5000 convidados por importação')
+});
+
 // Schema Zod para o endpoint de check-in
 const checkinPayloadSchema = z.object({
   qrcode: z.string().min(1, 'QR Code é obrigatório'),
@@ -64,17 +77,16 @@ export const getConvidados = async (req, res) => {
     [eventoId, ...queryParams, limit, offset]
   );
 
-  // Descriptografa biometria para uso em memória no Edge Node (Zenith)
-  const rowsWithDecryptedBio = rows.map(r => {
-    if (r.face_descriptor) {
-      r.face_descriptor = decryptBiometry(r.face_descriptor);
-    }
-    return r;
-  });
+  // 🔒 FIX CRÍTICO-04: Dados biométricos NUNCA enviados ao frontend (LGPD + OWASP A02)
+  // O frontend recebe apenas uma flag booleana se o convidado tem biometria cadastrada.
+  const rowsSafe = rows.map(({ face_descriptor, ...rest }) => ({
+    ...rest,
+    has_biometric: !!face_descriptor
+  }));
 
   res.json({
     success: true,
-    dados: rowsWithDecryptedBio,
+    dados: rowsSafe,
     paginacao: {
       total,
       paginaAtual: page,
@@ -127,6 +139,15 @@ export const createConvidadosMassa = async (req, res) => {
 
 export const updateConvidado = async (req, res) => {
   const { id, eventoId } = req.params;
+
+  // 🔒 FIX ALTO-03: IDOR — verifica se o usuário tem acesso a este evento
+  if (req.user?.role !== 'ADMIN' && req.user?.role !== 'MANAGER') {
+    if (req.user?.evento_atribuido && Number(req.user.evento_atribuido) !== Number(eventoId)) {
+      Logger.warn(`[IDOR-ATTEMPT] User ${req.user.id} (role: ${req.user.role}) tentou editar convidado do evento ${eventoId}`, { ip: req.ip });
+      return res.status(403).json({ success: false, message: 'Acesso Negado: Sem permissão para este evento.' });
+    }
+  }
+
   const { convTable } = getEventTablesList(eventoId);
   validateTableName(convTable);
   const { nome, categoria, cpf, telefone, email, observacoes, tags } = req.body;
@@ -167,7 +188,7 @@ export const check = async (req, res) => {
   }
 
   const { qrcode, evento_id, photo, station_id, printer_ip, printer_port, data_ponto } = parsed.data;
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const ip = req.ip; // 🔒 FIX ALTO-01: req.ip (resolvido via trust proxy, não spoofável)
 
   // 🔒 TOTEM SECURITY HARDENING: Garante isolamento entre eventos para totens
   if (req.user?.role === 'TOTEM' && req.user.evento_atribuido) {
@@ -192,7 +213,14 @@ export const check = async (req, res) => {
      // Emite evento socket se necessário
      const io = req.app.get('io');
      if (io && result.success) {
-        io.emit('checkin', {
+        // 🔒 FIX MÉDIO-02: Emite apenas para a room do evento (não global)
+        io.to(`evento_${evento_id}`).emit('checkin', {
+            id: result.participante.id,
+            nome: result.participante.nome,
+            evento_id,
+            tipo: photo ? 'FACIAL' : 'QRCODE'
+        });
+        io.to('admin').emit('checkin', {
             id: result.participante.id,
             nome: result.participante.nome,
             evento_id,
@@ -200,7 +228,13 @@ export const check = async (req, res) => {
         });
 
         if (result.isVIP) {
-            io.emit('vip_arrival', {
+            io.to(`evento_${evento_id}`).emit('vip_arrival', {
+                nome: result.participante.nome,
+                categoria: result.participante.categoria,
+                evento_id,
+                ts: new Date()
+            });
+            io.to('admin').emit('vip_arrival', {
                 nome: result.participante.nome,
                 categoria: result.participante.categoria,
                 evento_id,
@@ -225,7 +259,7 @@ export const check = async (req, res) => {
  */
 export const checkinFace = async (req, res) => {
   const { descriptor, evento_id, photo } = req.body;
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const ip = req.ip; // 🔒 FIX ALTO-01: req.ip (resolvido via trust proxy, não spoofável)
 
   // 🔒 TOTEM SECURITY HARDENING
   if (req.user?.role === 'TOTEM' && req.user.evento_atribuido) {
@@ -411,12 +445,19 @@ export const exportarCSV = async (req, res) => {
 
 export const importarSmart = async (req, res) => {
   const { eventoId } = req.params;
-  const { categoria, convidados } = req.body;
-  const { convTable } = getEventTablesList(eventoId);
-  
-  if (!convidados || !Array.isArray(convidados) || convidados.length === 0) {
-    return res.status(400).json({ success: false, message: 'Dados inválidos' });
+
+  // 🔒 FIX MÉDIO-06: Validação Zod completa de entrada
+  let categoria, convidados;
+  try {
+    const validated = importarSmartSchema.parse(req.body);
+    categoria = validated.categoria;
+    convidados = validated.convidados;
+  } catch (err) {
+    return res.status(400).json({ success: false, message: 'Dados inválidos', errors: err.errors?.map(e => e.message) });
   }
+
+  const { convTable } = getEventTablesList(eventoId);
+  validateTableName(convTable);
 
   const values = convidados.map(c => {
     const qrcode = `BACCH_${crypto.randomUUID().replace(/-/g, '').toUpperCase()}`;

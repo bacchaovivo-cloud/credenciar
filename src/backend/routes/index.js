@@ -25,4 +25,26 @@ router.use('/admin/webhooks', webhooksRoutes);
 router.get('/stats-consolidado', (req, res, next) => { req.url = '/consolidado'; zenithRoutes(req, res, next); });
 router.get('/listar_eventos', verifyToken, (req, res, next) => { req.url = '/'; eventosRoutes(req, res, next); });
 
+// 🔐 FIX CRÍTICO-01: Endpoint /me para re-hidratação de sessão sem localStorage
+// O frontend chama este endpoint ao carregar para obter role/permissões do cookie httpOnly
+router.get('/me', verifyToken, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      'SELECT id, nome, usuario, role, evento_atribuido, permissoes FROM usuarios WHERE id = ?', 
+      [req.user.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+    const u = rows[0];
+    res.json({ 
+      success: true, 
+      role: u.role,
+      nome: u.nome,
+      evento_id: u.evento_atribuido,
+      permissoes: typeof u.permissoes === 'string' ? JSON.parse(u.permissoes || '{}') : (u.permissoes || {})
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Erro ao buscar sessão.' });
+  }
+});
+
 export default router;

@@ -85,19 +85,19 @@ export const CheckinService = {
             // CORREÇÃO RACE CONDITION: O Cache só é setado AQUI, após o insert no banco ter sucesso sem jogar exceção
             CacheService.set(requestId, result, 10000);
 
-            // 🚨 REAL-TIME ENTERPRISE EVENTS (Socket ID)
-            const io = BrotherService.io; 
+            // 🔒 FIX MÉDIO-02: Emite apenas para a room do evento específico (não io.emit global)
+            const io = BrotherService.io;
             if (io) {
               if (isVIP) {
-                io.emit('vip_arrival', {
-                  id: p.id,
-                  nome: p.nome,
-                  categoria: p.categoria,
-                  evento_id: evento_id,
-                  timestamp: new Date()
+                io.to(`evento_${evento_id}`).emit('vip_arrival', {
+                  id: p.id, nome: p.nome, categoria: p.categoria, evento_id, timestamp: new Date()
+                });
+                io.to('admin').emit('vip_arrival', {
+                  id: p.id, nome: p.nome, categoria: p.categoria, evento_id, timestamp: new Date()
                 });
               }
-              io.emit('stats_update', { evento_id });
+              io.to(`evento_${evento_id}`).emit('stats_update', { evento_id });
+              io.to('admin').emit('stats_update', { evento_id });
             }
 
             // Invalida caches de estatísticas

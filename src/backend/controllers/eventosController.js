@@ -14,8 +14,6 @@ import fs from 'fs';
 // 🔒 CORREÇÃO CRÍTICA: Rota pública que não vaza configurações ou dados sensíveis
 export const getPublicEvents = async (req, res) => {
   try {
-    // Busca direto no banco apenas os campos necessários para vitrine/venda.
-    // Adapte o "status" conforme as regras de negócio do seu banco (ex: 'ATIVO').
     const [rows] = await db.query(
       'SELECT id, nome, data, local, logo_url, background_url FROM eventos ORDER BY data ASC'
     );
@@ -59,16 +57,18 @@ export const createEvento = async (req, res) => {
 };
 
 export const updateEvento = async (req, res) => {
+  // 🔒 FIX CRÍTICO-03: 'id' declarado no início, dentro do try correto
+  const { id } = req.params;
+  try {
     // 🔒 IDOR PROTECTION: MANAGER só edita os próprios eventos
     if (req.user?.role === 'MANAGER') {
-      const dbEvent = await db.query('SELECT criado_por FROM eventos WHERE id = ?', [id]);
-      if (dbEvent[0][0]?.criado_por !== req.user.id) {
+      const [rows] = await db.query('SELECT criado_por FROM eventos WHERE id = ?', [id]);
+      if (rows[0]?.criado_por !== req.user.id) {
         Logger.warn(`󰒃 [IDOR-ATTEMPT] MANAGER ${req.user.id} tentou editar evento ${id} de outrem.`, { ip: req.ip });
         return res.status(403).json({ success: false, message: 'Acesso Negado: Você não possui permissão para editar este evento.' });
       }
     }
 
-    // Fix #1: Validação Zod Parcial para garantir integridade no update
     const data = eventoSchema.partial().parse(req.body);
     const atualizado = await EventoService.atualizar(id, data);
     res.json({ success: true, message: 'Evento atualizado com sucesso!', dados: atualizado });
@@ -79,10 +79,13 @@ export const updateEvento = async (req, res) => {
 };
 
 export const deleteEvento = async (req, res) => {
+  // 🔒 FIX CRÍTICO-03: 'id' declarado no início, dentro do try correto
+  const { id } = req.params;
+  try {
     // 🔒 IDOR PROTECTION: MANAGER só exclui os próprios eventos
     if (req.user?.role === 'MANAGER') {
-      const dbEvent = await db.query('SELECT criado_por FROM eventos WHERE id = ?', [id]);
-      if (dbEvent[0][0]?.criado_por !== req.user.id) {
+      const [rows] = await db.query('SELECT criado_por FROM eventos WHERE id = ?', [id]);
+      if (rows[0]?.criado_por !== req.user.id) {
         Logger.warn(`󰒃 [IDOR-ATTEMPT] MANAGER ${req.user.id} tentou excluir evento ${id} de outrem.`, { ip: req.ip });
         return res.status(403).json({ success: false, message: 'Acesso Negado: Você não possui permissão para excluir este evento.' });
       }
@@ -121,10 +124,10 @@ export const uploadLogo = async (req, res) => {
 
   const filePath = req.file.path;
 
-  // 🔒 CORREÇÃO MÉDIA: Validação real do conteúdo do arquivo (Magic Bytes)
+  // 🔒 Validação real do conteúdo do arquivo (Magic Bytes)
   const meta = await fileTypeFromFile(filePath);
   if (!meta || !meta.mime.startsWith('image/')) {
-    fs.unlinkSync(filePath); // Exclui o script malicioso disfarçado de imagem do disco
+    fs.unlinkSync(filePath);
     return res.status(400).json({ success: false, message: 'Arquivo malicioso ou formato inválido detectado.' });
   }
 
@@ -139,10 +142,10 @@ export const uploadBackground = async (req, res) => {
 
   const filePath = req.file.path;
 
-  // 🔒 CORREÇÃO MÉDIA: Validação real do conteúdo do arquivo (Magic Bytes)
+  // 🔒 Validação real do conteúdo do arquivo (Magic Bytes)
   const meta = await fileTypeFromFile(filePath);
   if (!meta || !meta.mime.startsWith('image/')) {
-    fs.unlinkSync(filePath); // Exclui o arquivo falso
+    fs.unlinkSync(filePath);
     return res.status(400).json({ success: false, message: 'Arquivo malicioso ou formato inválido detectado.' });
   }
 

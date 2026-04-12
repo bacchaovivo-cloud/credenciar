@@ -24,6 +24,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const httpServer = createServer(app);
 
+// 🔒 FIX ALTO-01: Configura o trust proxy para que req.ip seja resolvido corretamente
+// e não seja spoofável via X-Forwarded-For. Ajuste para o número real de proxies (Nginx = 1).
+app.set('trust proxy', 1);
+
 // 🌐 CORS: Origens permitidas via variável de ambiente (nunca wildcard em produção)
 const allowedOrigins = (env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3001').split(',').map(o => o.trim()).filter(Boolean);
 
@@ -55,7 +59,7 @@ app.use(helmet({
       "style-src": ["'self'", "'unsafe-inline'"],
     },
   },
-  crossOriginEmbedderPolicy: false, // Permite carregar recursos de diferentes origens sem headers strict COEP
+  crossOriginEmbedderPolicy: false,
 }));
 
 
@@ -67,14 +71,12 @@ app.use(cors({
   },
   credentials: true
 }));
-// Fix: Limite reduzido de 50mb para 5mb — previne DoS via payload oversized
 app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser());
 
 import { HealthService } from './backend/services/healthService.js';
 
 // 🩺 HEALTH CHECK (Zenith Health Shield)
-// Retorna status básico publicamente e relatório detalhado apenas para ADMINs
 app.get('/health', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -89,7 +91,6 @@ app.get('/health', async (req, res) => {
     }
 
     if (!isAdmin) {
-      // 🕵️ Falha de Fingerprinting evitada: Resposta minimalista para não-admins
       return res.json({ status: 'HEALTHY', message: 'Auth required for detailed metrics' });
     }
 
@@ -100,8 +101,8 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// 🔐 SOCKET.IO AUTHENTICATION MIDDLEWARE
 io.use((socket, next) => {
-  // 🔐 HARDENING: Tenta pegar o token do Cookie (mais seguro) ou do Handshake (fallback controlado)
   const cookieHeader = socket.handshake.headers.cookie;
   let token = null;
 
@@ -110,7 +111,6 @@ io.use((socket, next) => {
     token = cookies['token'];
   }
 
-  // Fallback para dispositivos que não suportam cookies (opcional, aqui mantemos estrito para ADMINs)
   if (!token) {
     token = socket.handshake.auth.token || socket.handshake.headers['authorization']?.split(' ')[1];
   }
@@ -124,10 +124,29 @@ io.use((socket, next) => {
   });
 });
 
+// 🔒 FIX MÉDIO-02: Socket.IO rooms por evento — cada usuário só recebe eventos do seu evento
+io.on('connection', (socket) => {
+  const user = socket.user;
+  
+  // Junta o socket na room do evento atribuído
+  if (user?.evento_atribuido) {
+    socket.join(`evento_${user.evento_atribuido}`);
+    Logger.info(`[Socket] Usuário ${user.id} (${user.role}) entrou na room evento_${user.evento_atribuido}`);
+  }
+  
+  // ADMINs entram na room especial 'admin' que recebe todos os eventos
+  if (user?.role === 'ADMIN') {
+    socket.join('admin');
+  }
+  
+  socket.on('disconnect', () => {
+    Logger.info(`[Socket] Usuário ${user?.id} desconectou`);
+  });
+});
+
 app.use('/api', apiRoutes);
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-// Fix: usa env.NODE_ENV (validado pelo Zod) em vez de process.env.NODE_ENV direto
 if (env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../dist')));
   app.get('*', (req, res) => res.sendFile(path.resolve(__dirname, '../dist', 'index.html')));
@@ -137,8 +156,6 @@ app.use(errorHandler);
 
 import { HardwarePollingService } from './backend/services/hardwarePollingService.js';
 
-// ... (existing code)
-
 migrate().then(() => {
     BrotherService.setIo(io);
     HardwarePollingService.start(io);
@@ -146,10 +163,10 @@ migrate().then(() => {
 
 const PORT = env.PORT || 3001;
 httpServer.listen(PORT, () => {
-    Logger.info('🚀 BACCH PRODUÇÕES v8.0 - FULL ENTERPRISE EVOLUTION', { 
+    Logger.info('🚀 BACCH PRODUÇÕES v8.1 - SECURITY HARDENED', { 
         port: PORT, 
         mode: env.NODE_ENV,
-        security: 'Environment Validated, JWT, RateLimit, Audit ACTIVE',
+        security: 'TrustProxy, JWT Blacklist, Socket Rooms, SSRF+DNS, IDOR All Active',
         observability: 'Structured JSON Logging ACTIVE'
     });
 });
