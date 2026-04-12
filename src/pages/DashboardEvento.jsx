@@ -211,7 +211,7 @@ export default function DashboardEvento() {
         )}
       </AnimatePresence>
 
-      <div ref={dashboardRef} className="pt-24 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto flex-1 animate-slide-up-soft">
+      <div ref={dashboardRef} className="pt-30 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto flex-1 animate-slide-up-soft">
 
         {/* HEADER ESPECÍFICO DO EVENTO */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 bg-[#1a2333] p-6 rounded-xl border border-[#2a374a] relative overflow-hidden">
@@ -321,7 +321,7 @@ export default function DashboardEvento() {
                   </div>
 
                   <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                       {comparativoAtivo && stats.comparativo ? (
                         <LineChart data={stats.comparativo.dados} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#2a374a" vertical={false} />
@@ -334,7 +334,7 @@ export default function DashboardEvento() {
                           <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px', fontSize: '10px', color: '#94a3b8' }} />
                           {stats.comparativo.dias.map((dia, idx) => (
                             <Line
-                              key={dia}
+                              key={`${dia}-${idx}`}
                               type="monotone"
                               dataKey={dia}
                               name={`Dia 0${idx + 1} (${dia})`}
@@ -572,7 +572,7 @@ export default function DashboardEvento() {
                   Fluxo por Hora
                 </h3>
                 <div className="w-full h-64">
-                  <ResponsiveContainer minWidth={0}>
+                  <ResponsiveContainer minWidth={0} minHeight={0}>
                     <AreaChart data={stats.grafico} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorQtdBottom" x1="0" y1="0" x2="0" y2="1">
@@ -599,7 +599,7 @@ export default function DashboardEvento() {
                 </h3>
                 <div className="w-full h-64 flex items-center justify-center">
                   {stats.statsDia && stats.statsDia.length > 1 ? (
-                    <ResponsiveContainer minWidth={0}>
+                    <ResponsiveContainer minWidth={0} minHeight={0}>
                       <BarChart data={stats.statsDia} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                         <XAxis dataKey="dia" stroke="#64748b" fontSize={10} axisLine={false} tickLine={false} dy={10} />
                         <YAxis stroke="#64748b" fontSize={10} axisLine={false} tickLine={false} />
@@ -611,7 +611,7 @@ export default function DashboardEvento() {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : stats.total > 0 ? (
-                    <ResponsiveContainer minWidth={0}>
+                    <ResponsiveContainer minWidth={0} minHeight={0}>
                       <PieChart>
                         <Pie
                           data={[

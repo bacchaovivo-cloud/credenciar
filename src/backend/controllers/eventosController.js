@@ -114,7 +114,7 @@ export const uploadLogo = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Arquivo malicioso ou formato inválido detectado.' });
   }
 
-  const logoUrl = `/uploads/${req.file.filename}`;
+  const logoUrl = `/uploads/events/${req.file.filename}`;
   await db.query('UPDATE eventos SET logo_url = ? WHERE id = ?', [logoUrl, id]);
   res.json({ success: true, url: logoUrl });
 };
@@ -132,7 +132,7 @@ export const uploadBackground = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Arquivo malicioso ou formato inválido detectado.' });
   }
 
-  const bgUrl = `/uploads/${req.file.filename}`;
+  const bgUrl = `/uploads/events/${req.file.filename}`;
   await db.query('UPDATE eventos SET background_url = ? WHERE id = ?', [bgUrl, id]);
   res.json({ success: true, url: bgUrl });
 };

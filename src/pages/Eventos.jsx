@@ -365,7 +365,7 @@ export default function Eventos() {
         </div>
       )}
 
-      <div className="pt-24 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto flex-1 animate-slide-up-soft">
+      <div className="pt-30 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto flex-1 animate-slide-up-soft">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div>
             <h2 className="m-0 text-2xl font-bold text-white tracking-tight">Meus Eventos</h2>

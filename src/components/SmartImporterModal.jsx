@@ -108,7 +108,7 @@ const SmartImporterModal = ({ eventoId, categoriaPadrao, onClose, onShowAlert, o
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="bg-[#1a2333] border border-[#2a374a] w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden"
       >
-        <div className="p-6 md:p-8">
+        <div className="pt-30 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto flex-1 animate-slide-up-soft">
           <div className="flex justify-between items-center mb-8 border-b border-[#2a374a] pb-4">
             <div>
               <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">

@@ -55,7 +55,10 @@ self.addEventListener('fetch', (event) => {
   // Estáticos: Cache-First
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+      return response || fetch(event.request).catch(() => {
+        // Retorna um status 404 válido em vez de null para evitar crash no SW
+        return new Response(null, { status: 404 }); 
+      });
     })
   );
 });

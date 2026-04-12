@@ -51,7 +51,7 @@ export default function AuditLogs() {
         </div>
       )}
 
-      <div className="p-6 md:p-12 max-w-[1400px] mx-auto w-full flex-1 animate-slide-up-soft">
+      <div className="pt-30 pb-12 px-4 md:px-8 max-w-[1400px] mx-auto w-full flex-1 animate-slide-up-soft">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight uppercase mb-1.5 text-white">Centro de Auditoria Forense</h1>

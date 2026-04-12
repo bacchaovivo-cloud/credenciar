@@ -414,21 +414,6 @@ export default function Menu() {
 
               <div className="w-px h-5 bg-[#2a374a] hidden sm:block mx-1"></div>
 
-              {/* RADAR & TEMAS */}
-              <div className="flex items-center gap-1 bg-[#0f1522] border border-[#2a374a] rounded-lg p-1 hidden sm:flex">
-                <button 
-                  onClick={() => setRadarAtivo(!radarAtivo)}
-                  className={`p-1.5 rounded border transition-all ${radarAtivo ? 'border-blue-500/30 text-blue-400 bg-blue-500/10' : 'border-transparent text-slate-500 hover:text-white hover:bg-[#1a2333]'}`}
-                  title="Radar de VIPs"
-                  aria-label="Radar"
-                >
-                  <i className={`bi ${radarAtivo ? 'bi-broadcast-pin' : 'bi-broadcast'} text-sm`}></i>
-                </button>
-                <button onClick={toggleTheme} className="p-1.5 rounded border border-transparent text-slate-500 hover:text-white hover:bg-[#1a2333] transition-all">
-                  {theme === 'dark' ? <i className="bi bi-sun-fill text-sm"></i> : <i className="bi bi-moon-fill text-sm"></i>}
-                </button>
-              </div>
-
               {/* STATUS & EXIT */}
               <div className="flex items-center gap-2 pl-1">
                  <div className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[9px] font-bold tracking-widest ${

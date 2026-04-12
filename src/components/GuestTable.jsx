@@ -68,7 +68,7 @@ const GuestTable = ({
 
       if (alreadyEntered) {
         return (
-          <div key={diaBackend} className="inline-flex items-center ml-1 first:ml-0">
+          <div key={`${diaBackend}-${idx}`} className="inline-flex items-center ml-1 first:ml-0">
             <span className={`text-[9px] font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-l-lg inline-flex items-center gap-1.5 ${isMobile ? 'py-2 px-3' : 'py-2.5 px-3'}`} title={`Data/Hora: ${c.dias_presente}`}>
               <i className="bi bi-check-all text-xs"></i> {isMobile ? `D.0${idx+1}` : `DIA 0${idx+1}`}
             </span>
@@ -85,7 +85,7 @@ const GuestTable = ({
 
       return (
         <button 
-          key={diaBackend}
+          key={`${diaBackend}-${idx}`}
           onClick={() => onCheckin(c.qrcode, { data_ponto: diaBackend })} 
           className={`bg-[#0f1522] hover:bg-blue-600 text-slate-300 hover:text-white border border-[#2a374a] hover:border-blue-500 rounded-lg font-bold text-[10px] uppercase tracking-widest flex items-center gap-1.5 active:scale-95 transition-all ${isMobile ? 'py-2 px-3' : 'py-2.5 px-3 ml-1'}`}
           title={`Inserir Manual: Dia ${idx+1} (${brStr})`}
@@ -114,8 +114,8 @@ const GuestTable = ({
       <div className="md:hidden divide-y divide-[#2a374a]">
         {exibidos.length === 0 ? (
           <p className="text-center p-12 text-slate-500 font-bold text-[10px] uppercase tracking-widest">Nenhum convidado encontrado.</p>
-        ) : exibidos.map(c => (
-          <div key={c.id} className={`p-4 transition-colors ${selectedIds.includes(c.id) ? 'bg-blue-500/10' : 'bg-transparent hover:bg-[#0f1522]'}`}>
+        ) : exibidos.map((c, idx) => (
+          <div key={`${c.id}-${idx}`} className={`p-4 transition-colors ${selectedIds.includes(c.id) ? 'bg-blue-500/10' : 'bg-transparent hover:bg-[#0f1522]'}`}>
             {/* Header: Checkbox, Nome e Categoria */}
             <div className="flex justify-between items-start mb-4 gap-3">
               <input 
@@ -195,9 +195,9 @@ const GuestTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#2a374a]">
-            {exibidos.map(c => {
+            {exibidos.map((c, idx) => {
               return (
-              <tr key={c.id} className={`transition-colors group ${selectedIds.includes(c.id) ? 'bg-blue-500/10' : 'hover:bg-[#0f1522]'}`}>
+              <tr key={`${c.id}-${idx}`} className={`transition-colors group ${selectedIds.includes(c.id) ? 'bg-blue-500/10' : 'hover:bg-[#0f1522]'}`}>
                 <td className="p-4 text-center">
                   <input 
                     type="checkbox" 

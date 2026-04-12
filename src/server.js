@@ -92,7 +92,7 @@ io.use((socket, next) => {
 });
 
 app.use('/api', apiRoutes);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Fix: usa env.NODE_ENV (validado pelo Zod) em vez de process.env.NODE_ENV direto
 if (env.NODE_ENV === 'production') {

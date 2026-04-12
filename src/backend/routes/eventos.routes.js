@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import fs from 'fs';
 import { 
   getEventos, getPublicEvents, getEventoById, createEvento, updateEvento, deleteEvento, 
   getSetores, addSetor, deleteSetor, 
@@ -13,7 +14,20 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'backend/uploads/');
+    // 🔒 CORREÇÃO CRÍTICA: Standardizado para a pasta 'uploads' na raiz do projeto
+    const uploadPath = path.join(process.cwd(), 'uploads', 'events');
+    
+    // Auto-correção: Cria a pasta se não existir para evitar crash no Multer
+    try {
+      if (!fs.existsSync(uploadPath)) {
+        fs.mkdirSync(uploadPath, { recursive: true });
+        console.log('📦 Diretório de uploads criado:', uploadPath);
+      }
+    } catch (err) {
+      console.error('❌ Falha ao criar diretório de uploads:', err);
+    }
+
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);

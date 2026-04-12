@@ -120,7 +120,7 @@ export default function LabelDesigner() {
     <div className="min-h-screen bg-[#0f1522] font-sans flex flex-col text-slate-300">
       <Menu />
 
-      <div className="p-6 md:p-12 max-w-[1400px] mx-auto w-full flex-1 animate-slide-up-soft">
+      <div className="pt-30 pb-12 px-4 md:px-8 max-w-[1400px] mx-auto w-full flex-1 animate-slide-up-soft">
         {msg.texto && (
             <div className={`mb-6 p-4 rounded-lg text-xs font-bold uppercase tracking-widest text-center border ${msg.tipo === 'erro' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'}`}>
                 {msg.texto}

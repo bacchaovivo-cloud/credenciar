@@ -28,7 +28,7 @@ export default function Logs() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 font-sans flex flex-col">
       <Menu />
       
-      <div className="p-6 md:p-8 w-full max-w-7xl mx-auto flex-1">
+      <div className="pt-30 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto flex-1 animate-slide-up-soft">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">

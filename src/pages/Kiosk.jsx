@@ -70,7 +70,7 @@ export default function Kiosk() {
         try {
             const res = await apiRequest('impressao/credenciar', {
                 qrcode: code,
-                evento_id: eventoId,
+                evento_id: Number(eventoId),
                 printer_ip: localIp,
                 printer_port: localPort ? parseInt(localPort) : 9100,
                 station_id: stationName
@@ -81,10 +81,10 @@ export default function Kiosk() {
                     particleCount: 150, 
                     spread: 70, 
                     origin: { y: 0.6 },
-                    colors: [evento?.cor_primaria || '#0ea5e9', '#38bdf8', '#ffffff'] 
+                    colors: [evento?.cor_primaria || '#3b82f6', '#60a5fa', '#ffffff'] 
                 });
                 playSound('success');
-                setStatus({ active: true, msg: config.success_msg || 'BEM VINDO(A)!', type: 'success', nome: res.participante?.nome || '' });
+                setStatus({ active: true, msg: config.success_msg || 'BEM-VINDO(A)!', type: 'success', nome: res.participante?.nome || '' });
             } else {
                 playSound('error');
                 setStatus({ active: true, msg: res.message || config.error_msg || 'ERRO NO ACESSO', type: 'error', nome: '' });
@@ -104,51 +104,47 @@ export default function Kiosk() {
     };
 
     const config = typeof evento?.config_totem === 'string' ? JSON.parse(evento.config_totem) : (evento?.config_totem || {});
-    const corPrimaria = evento?.cor_primaria || '#0ea5e9';
+    const corPrimaria = evento?.cor_primaria || '#3b82f6'; // Fallback para blue-500
     const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
 
     return (
-        <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans overflow-hidden selection:bg-sky-500/30 relative">
+        <div className="min-h-screen bg-[#0f1522] text-white flex flex-col font-sans overflow-hidden selection:bg-blue-500/30 relative">
             
-            {/* BACKGROUND PERSONALIZADO */}
-            {evento?.background_url ? (
-                <div className="absolute inset-0 z-0">
-                    <img src={`${baseUrl}${evento.background_url}`} className="w-full h-full object-cover opacity-20" alt="" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/80 to-transparent"></div>
-                </div>
-            ) : (
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-sky-500/10 blur-[120px] rounded-full animate-pulse"></div>
-                    <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full animate-pulse animation-delay-2000"></div>
+            {/* BACKGROUND PERSONALIZADO MODO FLAT */}
+            {evento?.background_url && (
+                <div className="absolute inset-0 z-0 opacity-15 grayscale mix-blend-overlay">
+                    <img src={`${baseUrl}${evento.background_url}`} className="w-full h-full object-cover" alt="" />
                 </div>
             )}
+            {/* Grid de fundo técnico */}
+            <div className="absolute inset-0 z-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
 
             {/* HEADER */}
-            <header className="p-8 flex justify-between items-center relative z-10">
-                <div className="flex items-center gap-6">
+            <header className="px-8 py-6 flex justify-between items-center relative z-10 border-b border-[#2a374a] bg-[#1a2333]/90">
+                <div className="flex items-center gap-5">
                     {evento?.logo_url ? (
-                        <img src={`${baseUrl}${evento.logo_url}`} className="h-14 md:h-20 object-contain" alt="Logo" />
+                        <img src={`${baseUrl}${evento.logo_url}`} className="h-12 md:h-16 object-contain" alt="Logo" />
                     ) : (
-                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: corPrimaria }}>
+                        <div className="w-12 h-12 rounded-lg flex items-center justify-center border border-[#2a374a] bg-[#0f1522]" style={{ color: corPrimaria }}>
                             <i className="bi bi-lightning-charge-fill text-2xl"></i>
                         </div>
                     )}
                     <div>
-                        <h1 className="text-xl md:text-2xl font-black uppercase tracking-tighter leading-none">{config.title || evento?.nome || 'Carregando...'}</h1>
-                        <p className="text-[10px] font-bold tracking-[0.3em] uppercase mt-1" style={{ color: corPrimaria }}>{config.subtitle || 'Self Check-in Express'}</p>
+                        <h1 className="text-xl md:text-2xl font-black uppercase tracking-widest leading-none text-white">{config.title || evento?.nome || 'Carregando...'}</h1>
+                        <p className="text-[10px] font-bold tracking-[0.3em] uppercase mt-1.5" style={{ color: corPrimaria }}>{config.subtitle || 'Self Check-in Express'}</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="hidden md:flex items-center gap-3 bg-white/5 backdrop-blur-xl px-4 py-2 rounded-full border border-white/10">
-                        <div className={`w-2 h-2 rounded-full animate-pulse ${healthStatus === 'ONLINE' ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-red-500'}`}></div>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-white/50">{STATIC_STATION_ID} • {healthStatus}</span>
+                    <div className="hidden md:flex items-center gap-2 bg-[#0f1522] px-3 py-1.5 rounded-lg border border-[#2a374a]">
+                        <div className={`w-1.5 h-1.5 rounded-full ${healthStatus === 'ONLINE' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{STATIC_STATION_ID} • {healthStatus}</span>
                     </div>
                     <button 
-                       onClick={() => navigate(`/dashboard/${eventoId}`)}
-                       className="w-12 h-12 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/10 group"
+                        onClick={() => navigate(`/dashboard/${eventoId}`)}
+                        className="w-10 h-10 bg-[#0f1522] hover:bg-red-500 hover:border-red-500 rounded-lg flex items-center justify-center transition-colors border border-[#2a374a] text-slate-400 hover:text-white"
                     >
-                        <i className="bi bi-x-lg text-slate-400 group-hover:text-white transition-colors"></i>
+                        <i className="bi bi-x-lg"></i>
                     </button>
                 </div>
             </header>
@@ -156,43 +152,47 @@ export default function Kiosk() {
             {/* MAIN INTERFACE */}
             <main className="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
                 {!status.active ? (
-                    <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center animate-in fade-in zoom-in-95 duration-500">
+                    <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-10 items-center animate-in fade-in zoom-in-95 duration-300">
+                        
                         {/* LEFT: SCANNER */}
-                        <div className="flex flex-col items-center gap-8">
-                            <div className="relative group">
-                                <div className="absolute -inset-4 rounded-[3rem] blur-xl opacity-0 group-hover:opacity-60 transition-all duration-700" style={{ backgroundColor: `${corPrimaria}40` }}></div>
-                                <div className="w-[340px] h-[340px] md:w-[450px] md:h-[450px] bg-slate-900 border-[8px] border-slate-800 rounded-[3rem] overflow-hidden shadow-2xl relative">
-                                    {showScanner && (
-                                        <Scanner 
-                                            onScan={(res) => res[0]?.rawValue && handleCheckin(res[0].rawValue)}
-                                            styles={{ container: { width: '100%', height: '100%' } }}
-                                        />
-                                    )}
-                                    <div className="absolute inset-0 border-[2px] border-white/20 pointer-events-none rounded-[2.5rem] m-4"></div>
-                                    <div className="absolute top-1/2 left-4 right-4 h-0.5 shadow-lg animate-scan-slow" style={{ backgroundColor: corPrimaria }}></div>
-                                </div>
+                        <div className="flex flex-col items-center gap-6">
+                            <div className="text-center mb-2">
+                                <h2 className="text-2xl font-black uppercase tracking-widest mb-1">{config.instruction_qr || 'Aponte seu QR Code'}</h2>
+                                <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Posicione o código no centro da tela</p>
                             </div>
-                            <div className="text-center">
-                                <h2 className="text-3xl font-black uppercase tracking-tighter mb-2 italic">{config.instruction_qr || 'Aponte seu QR Code'}</h2>
-                                <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Posicione o código no centro da câmera</p>
+                            
+                            <div className="w-[300px] h-[300px] md:w-[380px] md:h-[380px] bg-[#0f1522] border-4 border-[#2a374a] rounded-2xl overflow-hidden relative shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                                {showScanner && (
+                                    <Scanner 
+                                        onScan={(res) => res[0]?.rawValue && handleCheckin(res[0].rawValue)}
+                                        styles={{ container: { width: '100%', height: '100%' } }}
+                                    />
+                                )}
+                                {/* HUD Scanner overlay */}
+                                <div className="absolute inset-0 pointer-events-none">
+                                    <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 rounded-tl-xl m-4" style={{ borderColor: corPrimaria }}></div>
+                                    <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 rounded-tr-xl m-4" style={{ borderColor: corPrimaria }}></div>
+                                    <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 rounded-bl-xl m-4" style={{ borderColor: corPrimaria }}></div>
+                                    <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 rounded-br-xl m-4" style={{ borderColor: corPrimaria }}></div>
+                                </div>
+                                <div className="absolute top-1/2 left-0 right-0 h-0.5 animate-scan-slow opacity-80" style={{ backgroundColor: corPrimaria, boxShadow: `0 0 10px ${corPrimaria}` }}></div>
                             </div>
                         </div>
 
                         {/* RIGHT: MANUAL ENTRY */}
-                        <div className="flex flex-col gap-8 bg-white/5 p-10 rounded-[3rem] border border-white/10 backdrop-blur-md shadow-2xl">
+                        <div className="flex flex-col gap-6 bg-[#1a2333] p-8 rounded-2xl border border-[#2a374a] shadow-2xl">
                             <div className="text-center">
-                                <h2 className="text-2xl font-black uppercase tracking-widest mb-1 italic">{config.instruction_cpf || 'Entrada Manual'}</h2>
-                                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Digite seu CPF clicando nos números</p>
+                                <h2 className="text-lg font-black uppercase tracking-widest mb-1">{config.instruction_cpf || 'Entrada Manual'}</h2>
+                                <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">Digite seu CPF no painel</p>
                             </div>
                             
-                            <div className="bg-black/40 p-6 rounded-2xl border-2 border-slate-700 text-center relative overflow-hidden group">
-                                <div className="absolute inset-0 transition-all duration-300 opacity-10" style={{ backgroundColor: manualEntry ? corPrimaria : 'transparent' }}></div>
-                                <span className={`text-4xl md:text-5xl font-black font-mono tracking-widest relative z-10 ${manualEntry ? 'text-white' : 'text-slate-700'}`}>
+                            <div className="bg-[#0f1522] p-5 rounded-lg border border-[#2a374a] text-center relative overflow-hidden">
+                                <span className={`text-3xl md:text-4xl font-black font-mono tracking-[0.2em] relative z-10 ${manualEntry ? 'text-white' : 'text-slate-600'}`}>
                                     {manualEntry.padEnd(11, '•')}
                                 </span>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-3 w-full">
+                            <div className="grid grid-cols-3 gap-2.5 w-full">
                                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'LIMPAR', 0, 'OK'].map(key => (
                                     <button 
                                         key={key}
@@ -201,11 +201,11 @@ export default function Kiosk() {
                                             else if (key === 'OK') handleCheckin(manualEntry);
                                             else handleKeypad(key);
                                         }}
-                                        style={key === 'OK' ? { backgroundColor: corPrimaria } : {}}
-                                        className={`p-6 rounded-2xl text-xl font-black transition-all active:scale-90 flex items-center justify-center ${
-                                            key === 'OK' ? 'hover:brightness-110 text-white shadow-lg shadow-sky-500/20 col-span-1' :
-                                            key === 'LIMPAR' ? 'bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs' :
-                                            'bg-white/5 hover:bg-white/10 text-white border border-white/5'
+                                        style={key === 'OK' ? { backgroundColor: corPrimaria, borderColor: corPrimaria } : {}}
+                                        className={`p-4 rounded-lg text-lg font-black transition-all active:scale-95 flex items-center justify-center border ${
+                                            key === 'OK' ? 'hover:brightness-110 text-white shadow-lg col-span-1' :
+                                            key === 'LIMPAR' ? 'bg-[#0f1522] hover:bg-red-500 border-[#2a374a] hover:border-red-500 text-slate-400 hover:text-white text-[10px] uppercase tracking-widest' :
+                                            'bg-[#0f1522] hover:bg-[#2a374a] text-slate-300 hover:text-white border-[#2a374a]'
                                         }`}
                                     >
                                         {key}
@@ -216,44 +216,44 @@ export default function Kiosk() {
                     </div>
                 ) : (
                     /* SUCCESS / ERROR STATE */
-                    <div className={`w-full h-full flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300 p-8 text-center`}>
-                        <div className={`w-40 h-40 md:w-64 md:h-64 rounded-full flex items-center justify-center mb-8 relative ${status.type === 'success' ? 'bg-emerald-500 shadow-[0_0_80px_rgba(16,185,129,0.3)]' : 'bg-red-500 shadow-[0_0_80px_rgba(239,68,68,0.3)]'}`}>
-                            <i className={`bi ${status.type === 'success' ? 'bi-check-lg' : 'bi-x-lg'} text-7xl md:text-9xl`}></i>
-                            <div className="absolute inset-0 rounded-full border-8 border-white/20 animate-ping opacity-20"></div>
+                    <div className="w-full h-full flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-200 p-8 text-center bg-[#1a2333] border border-[#2a374a] rounded-2xl max-w-4xl mx-auto shadow-2xl">
+                        <div className={`w-32 h-32 md:w-48 md:h-48 rounded-xl flex items-center justify-center mb-8 border-4 ${status.type === 'success' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'bg-red-500/10 border-red-500 text-red-500'}`}>
+                            <i className={`bi ${status.type === 'success' ? 'bi-check-lg' : 'bi-x-lg'} text-7xl md:text-8xl`}></i>
                         </div>
-                        <h1 className="text-5xl md:text-8xl font-black uppercase tracking-tighter mb-4">{status.msg}</h1>
-                        <h2 className="text-3xl md:text-5xl font-black uppercase tracking-widest italic" style={{ color: corPrimaria }}>{status.nome}</h2>
+                        <h1 className="text-4xl md:text-6xl font-black uppercase tracking-widest mb-4">{status.msg}</h1>
+                        {status.nome && <h2 className="text-2xl md:text-4xl font-bold uppercase tracking-widest text-slate-300">{status.nome}</h2>}
+                        
                         {status.type === 'success' && (
-                            <div className="mt-12 flex flex-col items-center gap-4">
-                                <div className="flex items-center gap-3 bg-white/5 px-8 py-4 rounded-full border border-white/10">
-                                    <div className="w-4 h-4 bg-emerald-500 rounded-full animate-pulse"></div>
-                                    <span className="text-xs font-black uppercase tracking-[0.2em]">{config.printing_msg || 'Sua etiqueta está sendo impressa...'}</span>
+                            <div className="mt-10 flex flex-col items-center gap-4">
+                                <div className="flex items-center gap-3 bg-[#0f1522] px-6 py-3 rounded-lg border border-[#2a374a]">
+                                    <i className="bi bi-printer-fill text-slate-400 animate-pulse"></i>
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">{config.printing_msg || 'Sua etiqueta está sendo impressa...'}</span>
                                 </div>
-                                <p className="text-slate-500 font-bold text-sm">Por favor, retire sua credencial ao lado da impressora.</p>
+                                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest">Por favor, retire sua credencial ao lado</p>
                             </div>
                         )}
-                        <p className="mt-20 text-[10px] font-black text-slate-700 uppercase tracking-[0.4em] animate-pulse">Reiniciando em instantes</p>
+                        <p className="mt-16 text-[9px] font-bold text-slate-600 uppercase tracking-[0.4em] animate-pulse">Reiniciando terminal...</p>
                     </div>
                 )}
             </main>
 
             {/* FOOTER */}
-            <footer className="p-8 flex justify-center items-center relative z-10 border-t border-white/5 bg-black/20">
-                <p className="text-slate-600 font-black text-[10px] uppercase tracking-[0.5em] flex items-center gap-3 text-center">
-                    {config.footer_text || 'Bacch Produções Enterprise CRM v7.2'}
+            <footer className="px-8 py-4 flex justify-between items-center relative z-10 border-t border-[#2a374a] bg-[#1a2333]">
+                <p className="text-slate-500 font-bold text-[9px] uppercase tracking-[0.3em] flex items-center gap-2">
+                    <i className="bi bi-cpu-fill"></i> {config.footer_text || 'Bacch PrimeCred v7.2'}
                 </p>
+                <div className="text-slate-600 text-[9px] font-bold uppercase tracking-widest">
+                    Operando no Modo Totem
+                </div>
             </footer>
 
             <style>{`
                 @keyframes scan-slow {
-                    0%, 100% { transform: translateY(-160px); opacity: 0.2; }
-                    50% { transform: translateY(160px); opacity: 0.8; }
+                    0%, 100% { transform: translateY(-140px); }
+                    50% { transform: translateY(140px); }
                 }
                 .animate-scan-slow {
-                    animation: scan-slow 3s infinite ease-in-out;
-                }
-                .animation-delay-2000 {
-                    animation-delay: 2s;
+                    animation: scan-slow 2.5s infinite ease-in-out;
                 }
             `}</style>
         </div>

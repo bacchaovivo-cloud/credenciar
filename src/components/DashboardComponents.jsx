@@ -41,7 +41,7 @@ export const ComparisonChart = ({ data }) => (
     animate={{ opacity: 1 }}
     className="w-full h-64 mt-4"
   >
-    <ResponsiveContainer>
+    <ResponsiveContainer minWidth={0} minHeight={0}>
       <BarChart data={data} barCategoryGap="25%">
         <XAxis 
           dataKey="nome" 

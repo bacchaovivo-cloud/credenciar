@@ -120,7 +120,7 @@ export default function ExecutiveDashboard() {
         </AnimatePresence>
       </div>
       
-      <div className="p-6 md:p-8 w-full max-w-[1400px] mx-auto flex-1 flex flex-col gap-6 animate-slide-up-soft">
+      <div className="pt-30 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto flex-1 flex flex-col gap-6 animate-slide-up-soft">
         
         {/* TOP BAR */}
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">

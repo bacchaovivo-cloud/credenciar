@@ -116,7 +116,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#0f1522] font-sans flex flex-col text-slate-300">
       <Menu />
-      <div className="pt-24 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto flex-1 animate-slide-up-soft">
+      <div className="pt-30 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto flex-1 animate-slide-up-soft">
 
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">

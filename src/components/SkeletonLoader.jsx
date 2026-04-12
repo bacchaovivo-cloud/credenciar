@@ -13,7 +13,7 @@ export const DashboardSkeleton = () => {
   );
 
   return (
-    <div className="p-4 md:p-8 w-full max-w-[1400px] mx-auto space-y-6">
+    <div className="pt-30 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto space-y-6">
       
       {/* Header Skeleton */}
       <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1a2333] p-6 rounded-xl border border-[#2a374a]">

@@ -87,7 +87,7 @@ export function useGuestData({
         const d = String(date.getDate()).padStart(2, '0');
         dias.push(`${y}-${m}-${d}`);
     }
-    return dias;
+    return [...new Set(dias)];
   }, [eventoInfo]);
 
   return {

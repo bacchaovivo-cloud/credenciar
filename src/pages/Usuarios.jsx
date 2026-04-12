@@ -162,7 +162,7 @@ export default function Usuarios() {
     <div className="min-h-screen bg-[#0f1522] text-slate-300 font-sans flex flex-col">
       <Menu />
 
-      <div className="pt-24 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto flex-1 animate-slide-up-soft">
+      <div className="pt-30 pb-12 px-4 md:px-8 w-full max-w-[1400px] mx-auto flex-1 animate-slide-up-soft">
         <h1 className="text-2xl font-bold text-white mb-6 tracking-tight">Gestão de Equipe (Staff)</h1>
 
         {/* CARD DE NOVO CADASTRO */}

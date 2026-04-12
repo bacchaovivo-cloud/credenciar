@@ -319,7 +319,7 @@ export default function Convidados() {
 
       <QRCodeModal isOpen={qrModal.ativo} qrData={qrModal} onClose={() => setQrModal({ ativo: false })} />
 
-      <div className="pt-24 pb-12 px-4 md:px-8 max-w-[1400px] mx-auto">
+      <div className="pt-30 pb-12 px-4 md:px-8 max-w-[1400px] mx-auto">
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 bg-[#1a2333] border border-[#2a374a] p-5 md:p-6 rounded-xl gap-4">
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-white">Portaria Virtual Pro</h2>
