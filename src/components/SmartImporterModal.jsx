@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { motion } from 'framer-motion';
 
 const SmartImporterModal = ({ eventoId, categoriaPadrao, onClose, onShowAlert, onReload }) => {
@@ -16,27 +16,45 @@ const SmartImporterModal = ({ eventoId, categoriaPadrao, onClose, onShowAlert, o
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const f = e.target.files[0];
     if (!f) return;
     setFile(f);
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const bstr = evt.target.result;
-      const wb = XLSX.read(bstr, { type: 'binary' });
-      const wsname = wb.SheetNames[0];
-      const ws = wb.Sheets[wsname];
-      const json = XLSX.utils.sheet_to_json(ws, { header: 1 });
+    const workbook = new ExcelJS.Workbook();
+    try {
+      const arrayBuffer = await f.arrayBuffer();
       
-      if (json.length > 0) {
-        setHeaders(json[0].map(h => String(h).trim()));
-        setData(json.slice(1));
+      if (f.name.toLowerCase().endsWith('.csv')) {
+        // Para CSV, usamos um streamer simples ou carregamos o buffer
+        await workbook.csv.load(arrayBuffer);
+      } else {
+        await workbook.xlsx.load(arrayBuffer);
+      }
+
+      const worksheet = workbook.worksheets[0];
+      const jsonData = [];
+      let headersList = [];
+
+      worksheet.eachRow((row, rowNumber) => {
+        // ExcelJS row.values retorna um array onde o índice 1 é a primeira coluna
+        const rowValues = Array.isArray(row.values) ? row.values.slice(1) : [];
+        
+        if (rowNumber === 1) {
+          headersList = rowValues.map(v => String(v || '').trim());
+        } else {
+          jsonData.push(rowValues);
+        }
+      });
+
+      if (headersList.length > 0) {
+        setHeaders(headersList);
+        setData(jsonData);
         setStep(2);
 
         // Auto-match attempt
         const newMap = { ...mapping };
-        json[0].forEach((h, idx) => {
+        headersList.forEach((h) => {
           const lower = String(h).toLowerCase();
           if (lower.includes('nome') || lower.includes('name')) newMap.nome = h;
           if (lower.includes('cpf') || lower.includes('document')) newMap.cpf = h;
@@ -45,8 +63,10 @@ const SmartImporterModal = ({ eventoId, categoriaPadrao, onClose, onShowAlert, o
         });
         setMapping(newMap);
       }
-    };
-    reader.readAsBinaryString(f);
+    } catch (err) {
+      console.error("Erro na importação:", err);
+      onShowAlert("Falha ao processar arquivo Excel/CSV: " + err.message, "erro");
+    }
   };
 
   const startImport = async () => {

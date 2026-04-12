@@ -25,7 +25,7 @@ export default function ExecutiveDashboard() {
     try {
         setIsExporting(true);
         const response = await fetch(`${API_URL}/stats/report/${type}/${eventoId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('userToken')}` }
+            credentials: 'include' // 🔐 HARDENING: Usa cookies httpOnly, não o localStorage
         });
         
         if (!response.ok) throw new Error('Erro na exportação');
@@ -59,7 +59,7 @@ export default function ExecutiveDashboard() {
   // ZENITH VIP PULSE: Socket Integration
   useEffect(() => {
     socketRef.current = io(SOCKET_URL, {
-      auth: { token: localStorage.getItem('userToken') }
+      withCredentials: true // 🔐 HARDENING: Envia cookies httpOnly para o WebSocket
     });
 
     socketRef.current.on('vip_arrival', (vip) => {

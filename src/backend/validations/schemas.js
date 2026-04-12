@@ -71,3 +71,8 @@ export const usuarioSchema = z.object({
   }),
   permissoes: z.any().optional().nullable()
 });
+
+// 🔐 SECURITY: Schema específico para criação que exige senha
+export const usuarioCreateSchema = usuarioSchema.extend({
+  senha: z.string().min(6, "Senha é obrigatória na criação (mínimo 6 caracteres)")
+});

@@ -6,20 +6,50 @@ import Dexie from 'dexie';
  */
 export const dbLocal = new Dexie('ZenithEdgeDB');
 
-dbLocal.version(2).stores({
-    convidados: '++id, qrcode, nome, cpf, status_checkin, evento_id, face_descriptor',
+dbLocal.version(4).stores({
+    convidados: '++id, qrcode, nome, status_checkin, evento_id', // Removido face_descriptor e cpf (LGPD Hardening)
     syncQueue: '++id, type, payload, timestamp',
-    eventConfig: 'id, nome, whatsapp_enabled',
-    bioCache: '++id, convidado_id, descriptor, timestamp'
+    eventConfig: 'id, nome, whatsapp_enabled'
 });
+
+/**
+ * 🔒 BIOMETRIC IN-MEMORY VAULT
+ * Armazena os descritores apenas na RAM enquanto a sessão estiver ativa. 
+ * Se a página atualizar, os dados são perdidos (Segurança Avançada).
+ */
+let bioMemoryCache = [];
+
 
 export const ZenithEdge = {
     
     // Salva a base completa do evento para uso offline
     async persistirEvento(eventoId, convidados) {
         await dbLocal.convidados.where('evento_id').equals(eventoId).delete();
-        const data = convidados.map(c => ({ ...c, evento_id: eventoId }));
+        
+        // Separa biometria dos dados que vão para o IndexedDB
+        bioMemoryCache = convidados
+            .filter(c => !!c.face_descriptor)
+            .map(c => ({ id: c.id, nome: c.nome, face_descriptor: c.face_descriptor }));
+
+        // 🔐 HARDENING: Higieniza convidados antes de salvar no IndexedDB (LGPD Compliance)
+        // Remove CPF, Email e Telefone para evitar exfiltração em massa do PII persistente.
+        const data = convidados.map(c => {
+            const { face_descriptor, cpf, email, telefone, ...rest } = c; 
+            return { ...rest, evento_id: eventoId };
+        });
+
         await dbLocal.convidados.bulkAdd(data);
+        console.log(`🛡️ [Zenith-Security] ${bioMemoryCache.length} biometrias na RAM. IndexedDB sanitizado (PII Removido).`);
+    },
+
+    // Cacheia lista de convidados para uso offline sem PII
+    async cacheConvidados(eventoId, convidados) {
+        await this.persistirEvento(eventoId, convidados);
+    },
+
+    // Recupera lista cacheada filtrada por evento
+    async getConvidadosCached(eventoId) {
+        return dbLocal.convidados.where('evento_id').equals(eventoId).toArray();
     },
 
     // Registra um check-in na fila local e marca o convidado como presente localmente
@@ -38,9 +68,12 @@ export const ZenithEdge = {
     // Busca um convidado no banco local comparando descritores biométricos (Offline FaceID)
     // Evoluído v2: Agora utiliza o biometricWorker para performance máxima
     async buscarPorBiometria(descriptor) {
-        const convidadosComBio = await dbLocal.convidados
-            .filter(c => !!c.face_descriptor)
-            .toArray();
+        if (bioMemoryCache.length === 0) {
+            console.warn("⚠️ [Biometria] Cache em memória vazio. Necessário sincronizar online.");
+            return null;
+        }
+
+        const convidadosComBio = bioMemoryCache;
 
         if (convidadosComBio.length === 0) return null;
 
@@ -66,26 +99,15 @@ export const ZenithEdge = {
         });
     },
 
-    // Busca rápida via QR ou CPF offline (Fix #9: Filtra no servidor Dexie, não carrega tudo na RAM)
+    // Busca rápida via QR offline (Removido CPF por segurança/sanitização)
     async buscarPorQr(eventoId, query) {
         const queryStr = String(query).trim();
-        const cleaning = queryStr.replace(/\D/g, '');
         
         // Tenta primeiro por QR code (indexado)
-        const porQr = await dbLocal.convidados
+        return dbLocal.convidados
             .where('qrcode').equals(queryStr)
             .and(c => c.evento_id == eventoId)
             .first();
-        if (porQr) return porQr;
-        
-        // Fallback: busca por CPF (também filtrado com evento_id)
-        if (cleaning.length >= 11) {
-            return dbLocal.convidados
-                .where('evento_id').equals(eventoId)
-                .filter(c => c.cpf && c.cpf.replace(/\D/g, '') === cleaning)
-                .first();
-        }
-        return null;
     },
 
     // Consome a fila e envia para o servidor

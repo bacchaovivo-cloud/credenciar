@@ -55,7 +55,7 @@ export const getConvidados = async (req, res) => {
 
   // Fix: eventoId passado como parâmetro ? na subquery em vez de interpolado diretamente
   const [rows] = await db.query(
-    `SELECT id, nome, qrcode, categoria, evento_id, cpf, telefone, email, status_checkin, data_entrada, 
+    `SELECT id, nome, qrcode, categoria, evento_id, cpf, telefone, email, status_checkin, data_entrada, face_descriptor,
      (SELECT GROUP_CONCAT(DATE_FORMAT(data_ponto, '%Y-%m-%d')) FROM ${logsTable} WHERE convidado_id = ${convTable}.id) as dias_ponto_raw,
      (SELECT GROUP_CONCAT(CONCAT(IFNULL(CONCAT('Dia ', LPAD(DATEDIFF(DATE(data_ponto), (SELECT DATE(data_inicio) FROM eventos WHERE id = ?)) + 1, 2, '0'), ': '), ''), DATE_FORMAT(criado_em, '%d/%m/%Y %H:%i:%s')) ORDER BY criado_em ASC SEPARATOR ' | ') FROM ${logsTable} WHERE convidado_id = ${convTable}.id) as dias_presente
      FROM ${convTable} ${queryWhere} 
@@ -64,9 +64,17 @@ export const getConvidados = async (req, res) => {
     [eventoId, ...queryParams, limit, offset]
   );
 
+  // Descriptografa biometria para uso em memória no Edge Node (Zenith)
+  const rowsWithDecryptedBio = rows.map(r => {
+    if (r.face_descriptor) {
+      r.face_descriptor = decryptBiometry(r.face_descriptor);
+    }
+    return r;
+  });
+
   res.json({
     success: true,
-    dados: rows,
+    dados: rowsWithDecryptedBio,
     paginacao: {
       total,
       paginaAtual: page,
@@ -267,9 +275,10 @@ export const updateFaceDescriptor = async (req, res) => {
 
     if (!descriptor) return res.json({ success: false, message: 'DESCRIÇÃO BIOMÉTRICA AUSENTE' });
 
+    const enc = encryptBiometry(JSON.stringify(descriptor));
     await db.query(
       `UPDATE ${convTable} SET face_descriptor = ? WHERE id = ?`,
-      [JSON.stringify(descriptor), id]
+      [enc, id]
     );
 
     // Invalida o Cache Biométrico da Memória para forçar releitura
@@ -487,16 +496,25 @@ export const importarEmMassa = async (req, res) => {
     }
 
     try {
-        const values = convidados.map(c => [
-            c.nome,
-            c.cpf || null,
-            c.email || null,
-            c.categoria || 'GERAL',
-            `BACCH_${crypto.randomUUID().replace(/-/g, '').toUpperCase()}`,
-            0 // status_checkin
-        ]);
+        const values = convidados.map(c => {
+            let faceEnc = null;
+            if (c.face_descriptor) {
+                // Se o descritor já vier como string, encripta direto, senão stringifica
+                const desc = typeof c.face_descriptor === 'string' ? c.face_descriptor : JSON.stringify(c.face_descriptor);
+                faceEnc = encryptBiometry(desc);
+            }
+            return [
+                c.nome,
+                c.cpf || null,
+                c.email || null,
+                c.categoria || 'GERAL',
+                `BACCH_${crypto.randomUUID().replace(/-/g, '').toUpperCase()}`,
+                0, // status_checkin
+                faceEnc
+            ];
+        });
 
-        const query = `INSERT IGNORE INTO ${convTable} (nome, cpf, email, categoria, qrcode, status_checkin) VALUES ?`;
+        const query = `INSERT IGNORE INTO ${convTable} (nome, cpf, email, categoria, qrcode, status_checkin, face_descriptor) VALUES ?`;
         const [result] = await db.query(query, [values]);
 
         Logger.info(`Importação em massa concluída: ${result.affectedRows} novos registros no evento ${eventoId}`);

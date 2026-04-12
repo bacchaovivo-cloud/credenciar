@@ -9,15 +9,12 @@ const BASE_URL = import.meta.env.VITE_API_URL || (
 export const apiRequest = async (endpoint, body = null, method = null) => {
   const url = `${BASE_URL}/${endpoint}`;
   
-  const token = localStorage.getItem('userToken');
-  
   const options = {
     method: method || (body ? 'POST' : 'GET'),
     headers: { 
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      'Content-Type': 'application/json'
     },
-    // Envia cookies httpOnly junto com todas as requisições
+    // 🔐 HARDENING: Envia cookies httpOnly automaticamente e não usa o localStorage (previne XSS exfiltration)
     credentials: 'include'
   };
 

@@ -64,8 +64,8 @@ export class EventoService {
     
     const placeholders = columns.map(() => '?').join(', ');
     const [result] = await db.query(
-      `INSERT INTO eventos (${columns.join(', ')}) VALUES (${placeholders})`,
-      values
+      `INSERT INTO eventos (${columns.join(', ')}${dados.criado_por ? ', criado_por' : ''}) VALUES (${placeholders}${dados.criado_por ? ', ?' : ''})`,
+      dados.criado_por ? [...values, dados.criado_por] : values
     );
 
     const newId = result.insertId;

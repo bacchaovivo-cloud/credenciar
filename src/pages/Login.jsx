@@ -13,8 +13,8 @@ export default function Login() {
   const navigate = useNavigate();
 
   const storeSession = (res) => {
-    localStorage.setItem('userToken', res.token);
-    localStorage.setItem('token', res.token); // 🔐 ADICIONADO: Chave esperada pelo App.jsx e ProtectedRoute
+    // 🔐 HARDENING: O token NUNCA deve ser armazenado no localStorage (previne exfiltração via XSS)
+    // O backend agora utiliza cookies httpOnly para gerenciar a sessão.
     localStorage.setItem('userRole', res.role);
     localStorage.setItem('evento_id', res.evento_id || '');
     localStorage.setItem('userName', res.nome);

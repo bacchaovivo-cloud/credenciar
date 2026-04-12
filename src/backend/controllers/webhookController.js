@@ -16,8 +16,18 @@ export const criarWebhook = async (req, res) => {
   }
 
   try {
-    // Valida formato básico da URL
-    new URL(url);
+    // 🛡️ SSRF HARDENING: Validação rigorosa de URL B2B
+    const PRIVATE_IP_PATTERN = /^(localhost|127\.|0\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.)/i;
+    const parsed = new URL(url);
+    
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return res.status(400).json({ success: false, message: 'Protocolo de webhook inválido: Apenas HTTP/HTTPS permitidos.' });
+    }
+
+    if (PRIVATE_IP_PATTERN.test(parsed.hostname)) {
+      Logger.warn(`󰒃 [SSRF-BLOCKED] Tentativa de cadastro de webhook para IP interno: ${url}`, { ip: req.ip });
+      return res.status(400).json({ success: false, message: 'URLs internas ou de metadata são proibidas por segurança.' });
+    }
   } catch {
     return res.status(400).json({ success: false, message: 'URL de webhook inválida.' });
   }

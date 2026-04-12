@@ -36,6 +36,10 @@ export const migrate = async () => {
   // Garante coluna cor_primaria na tabela eventos
   await db.query(`ALTER TABLE eventos ADD COLUMN IF NOT EXISTS cor_primaria VARCHAR(20) DEFAULT '#0ea5e9'`).catch(() => {});
 
+  // Garante coluna criado_por na tabela eventos (Forense & IDOR Protection)
+  await db.query(`ALTER TABLE eventos ADD COLUMN IF NOT EXISTS criado_por INT DEFAULT NULL`).catch(() => {});
+
+
   // Garante tabela de setores por evento
   await db.query(`
     CREATE TABLE IF NOT EXISTS setores_evento (

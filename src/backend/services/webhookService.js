@@ -62,6 +62,13 @@ export const WebhookService = {
     const deliveryId = await this._logDelivery(subscription.id, body, 'PENDENTE');
 
     try {
+      // 🛡️ SSRF DEFENSE IN DEPTH: Re-valida URL antes do fetch
+      const PRIVATE_IP_PATTERN = /^(localhost|127\.|0\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.)/i;
+      const parsed = new URL(subscription.url);
+      if (PRIVATE_IP_PATTERN.test(parsed.hostname)) {
+        throw new Error('Entrega bloqueada: URL interna detectada na execução.');
+      }
+
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 

@@ -23,7 +23,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET deve ter pelo menos 32 caracteres para segurança enterprise"),
   FORENSIC_SALT: z.string().min(16, "FORENSIC_SALT é obrigatório para o Biometric Vault"),
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://localhost:3001,http://localhost:4173'),
-  AES_IV_SALT: z.string().default('bacch_biometric_iv_salt_2026'),
+  AES_IV_SALT: z.string().min(16, "AES_IV_SALT é obrigatório para derivação de IV e proteção dos descritores biométricos"),
   // Redis: opcional — se vazio, usa cache in-memory
   REDIS_URL: z.string().optional().default(''),
 });

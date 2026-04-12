@@ -93,7 +93,7 @@ export const login2Step = async (req, res) => {
     if (recoveryCode) {
       verificado = await AuthService.verifyRecoveryCode(user.id, recoveryCode);
     } else {
-      verificado = AuthService.verifyToken(user.two_factor_secret, otpToken);
+      verificado = await AuthService.verifyToken(user.two_factor_secret, otpToken, user.id);
     }
 
     if (!verificado) {
@@ -166,7 +166,7 @@ export const verifyAndEnable2FA = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Processo de setup não iniciado. Solicite um novo QR Code.' });
   }
 
-  const verificado = AuthService.verifyToken(serverSecret, token);
+  const verificado = await AuthService.verifyToken(serverSecret, token, req.user.id);
 
   if (!verificado) {
     return res.status(400).json({ success: false, message: 'Código de verificação incorreto' });
@@ -178,8 +178,33 @@ export const verifyAndEnable2FA = async (req, res) => {
 };
 
 export const disable2FA = async (req, res) => {
-  await AuthService.disable2FA(req.user.id);
-  res.json({ success: true, message: '2FA Desabilitado' });
+  const { senha } = req.body;
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+  try {
+    if (!senha) {
+      return res.status(400).json({ success: false, message: 'Senha é obrigatória para desativar o 2FA.' });
+    }
+
+    // 🔐 HARDENING: Busca a senha atual para confirmar identidade antes de desativar segurança
+    const [rows] = await db.query('SELECT senha, usuario FROM usuarios WHERE id = ?', [req.user.id]);
+    if (rows.length === 0) return res.status(404).json({ success: false, message: 'Usuário não encontrado' });
+
+    const user = rows[0];
+    const senhaValida = await bcrypt.compare(senha, user.senha);
+
+    if (!senhaValida) {
+      await registrarLog(req.user.id, '2FA_DISABLE_FAIL', `Tentativa de desativar 2FA com senha incorreta`, ip);
+      return res.status(401).json({ success: false, message: 'Senha incorreta. Ação negada.' });
+    }
+
+    await AuthService.disable2FA(req.user.id);
+    await registrarLog(req.user.id, '2FA_DISABLED', `2FA desativado pelo usuário`, ip);
+
+    res.json({ success: true, message: '2FA Desabilitado com sucesso.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Erro ao desativar 2FA' });
+  }
 };
 
 // --- MÉTODOS DE GESTÃO DE USUÁRIOS (Admin) ---
@@ -203,7 +228,9 @@ export const getUsuarios = async (req, res) => {
 
 export const createUsuario = async (req, res) => {
   try {
-    const validatedData = usuarioSchema.parse(req.body);
+    // 🔐 SECURITY: Exige senha explicitamente na criação (Fix Fallback Bacch@123)
+    const { usuarioCreateSchema } = await import('../validations/schemas.js');
+    const validatedData = usuarioCreateSchema.parse(req.body);
     const { nome, usuario, senha, role, permissoes } = validatedData;
     
     const [existing] = await db.query('SELECT id FROM usuarios WHERE usuario = ?', [usuario]);
@@ -211,7 +238,7 @@ export const createUsuario = async (req, res) => {
       return res.status(409).json({ success: false, message: `Nome de usuário "${usuario}" já existe.` });
     }
     
-    const hash = await bcrypt.hash(senha || 'Bacch@123', SALT_ROUNDS);
+    const hash = await bcrypt.hash(senha, SALT_ROUNDS);
     const pJson = JSON.stringify(permissoes || {});
     await db.query('INSERT INTO usuarios (nome, usuario, senha, role, permissoes) VALUES (?, ?, ?, ?, ?)', 
       [nome, usuario, hash, role, pJson]);

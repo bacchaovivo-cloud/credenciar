@@ -19,13 +19,20 @@ export function useGuestData({
   const { data: qData, isLoading } = useQuery({
     queryKey: ['convidados', eventoAtivo, pagina, debouncedBusca, filtroCategoria],
     queryFn: async () => {
+      // 🔐 HARDENING: Migrado de localStorage para IndexedDB Sanitizado (ZenithEdge)
+      // Remove PII (CPF, Email, Telefone) de qualquer persistência no browser
       if (!isOnline) {
-        const local = JSON.parse(localStorage.getItem(`bacch_convidados_${eventoAtivo}`) || '[]');
+        const local = await ZenithEdge.getConvidadosCached(eventoAtivo);
         return { dados: local, paginacao: { total: local.length, paginaAtual: 1, totalPaginas: 1 } };
       }
+      
       const params = new URLSearchParams({ page: pagina, limit: POR_PAGINA, busca: debouncedBusca, categoria: filtroCategoria });
       const res = await apiRequest(`convidados/${eventoAtivo}?${params}`);
-      if (res.success) localStorage.setItem(`bacch_convidados_${eventoAtivo}`, JSON.stringify(res.dados));
+      
+      if (res.success && isOnline) {
+        // Cacheia apenas o necessário para operação offline, higienizando dados sensíveis
+        await ZenithEdge.cacheConvidados(eventoAtivo, res.dados);
+      }
       return res;
     },
     enabled: !!eventoAtivo,

@@ -16,6 +16,7 @@ import { BrotherService } from './backend/services/brotherService.js';
 import { errorHandler } from './backend/middlewares/errorHandler.js';
 import { globalLimiter } from './backend/middlewares/rateLimiter.js';
 import { Logger } from './backend/utils/logger.js';
+import { verifyToken, adminOnly } from './backend/middlewares/authMiddleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,7 +46,9 @@ app.use(helmet({
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
       "img-src": ["'self'", "data:", "blob:", "*"],
-      "connect-src": ["'self'", "wss:", "https:", "http:"],
+      "connect-src": env.NODE_ENV === 'production' 
+        ? ["'self'", "wss:", "https:"] 
+        : ["'self'", "wss:", "https:", "http:"],
       "script-src": env.NODE_ENV === 'production' 
         ? ["'self'"] 
         : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
@@ -71,20 +74,50 @@ app.use(cookieParser());
 import { HealthService } from './backend/services/healthService.js';
 
 // 🩺 HEALTH CHECK (Zenith Health Shield)
+// Retorna status básico publicamente e relatório detalhado apenas para ADMINs
 app.get('/health', async (req, res) => {
   try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    let isAdmin = false;
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, env.JWT_SECRET);
+        if (decoded.role === 'ADMIN') isAdmin = true;
+      } catch (err) { /* token inválido, segue como público */ }
+    }
+
+    if (!isAdmin) {
+      // 🕵️ Falha de Fingerprinting evitada: Resposta minimalista para não-admins
+      return res.json({ status: 'HEALTHY', message: 'Auth required for detailed metrics' });
+    }
+
     const report = await HealthService.getFullReport();
     res.json(report);
   } catch (e) {
-    res.status(500).json({ status: 'DOWN', message: e.message });
+    res.status(500).json({ status: 'DOWN', message: 'Internal Health Check Error' });
   }
 });
 
 io.use((socket, next) => {
-  const token = socket.handshake.auth.token || socket.handshake.headers['authorization']?.split(' ')[1];
+  // 🔐 HARDENING: Tenta pegar o token do Cookie (mais seguro) ou do Handshake (fallback controlado)
+  const cookieHeader = socket.handshake.headers.cookie;
+  let token = null;
+
+  if (cookieHeader) {
+    const cookies = Object.fromEntries(cookieHeader.split('; ').map(c => c.split('=')));
+    token = cookies['token'];
+  }
+
+  // Fallback para dispositivos que não suportam cookies (opcional, aqui mantemos estrito para ADMINs)
+  if (!token) {
+    token = socket.handshake.auth.token || socket.handshake.headers['authorization']?.split(' ')[1];
+  }
+
   if (!token) return next(new Error('Authentication error: No token provided'));
   
-  jwt.verify(token, env.JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] }, (err, decoded) => {
     if (err) return next(new Error('Authentication error: Invalid token'));
     socket.user = decoded;
     next();

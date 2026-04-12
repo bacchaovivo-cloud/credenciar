@@ -50,7 +50,7 @@ export const getEventoById = async (req, res) => {
 export const createEvento = async (req, res) => {
   try {
     const validatedData = eventoSchema.parse(req.body);
-    const novoEvento = await EventoService.criar(validatedData);
+    const novoEvento = await EventoService.criar({ ...validatedData, criado_por: req.user?.id });
     res.json({ success: true, message: 'Evento criado com sucesso!', id: novoEvento.id });
   } catch (error) {
     Logger.error('Erro na criação de evento:', error);
@@ -59,8 +59,15 @@ export const createEvento = async (req, res) => {
 };
 
 export const updateEvento = async (req, res) => {
-  const { id } = req.params;
-  try {
+    // 🔒 IDOR PROTECTION: MANAGER só edita os próprios eventos
+    if (req.user?.role === 'MANAGER') {
+      const dbEvent = await db.query('SELECT criado_por FROM eventos WHERE id = ?', [id]);
+      if (dbEvent[0][0]?.criado_por !== req.user.id) {
+        Logger.warn(`󰒃 [IDOR-ATTEMPT] MANAGER ${req.user.id} tentou editar evento ${id} de outrem.`, { ip: req.ip });
+        return res.status(403).json({ success: false, message: 'Acesso Negado: Você não possui permissão para editar este evento.' });
+      }
+    }
+
     // Fix #1: Validação Zod Parcial para garantir integridade no update
     const data = eventoSchema.partial().parse(req.body);
     const atualizado = await EventoService.atualizar(id, data);
@@ -72,8 +79,15 @@ export const updateEvento = async (req, res) => {
 };
 
 export const deleteEvento = async (req, res) => {
-  const { id } = req.params;
-  try {
+    // 🔒 IDOR PROTECTION: MANAGER só exclui os próprios eventos
+    if (req.user?.role === 'MANAGER') {
+      const dbEvent = await db.query('SELECT criado_por FROM eventos WHERE id = ?', [id]);
+      if (dbEvent[0][0]?.criado_por !== req.user.id) {
+        Logger.warn(`󰒃 [IDOR-ATTEMPT] MANAGER ${req.user.id} tentou excluir evento ${id} de outrem.`, { ip: req.ip });
+        return res.status(403).json({ success: false, message: 'Acesso Negado: Você não possui permissão para excluir este evento.' });
+      }
+    }
+
     await EventoService.excluir(id);
     res.json({ success: true, message: 'Evento removido com sucesso!' });
   } catch (error) {

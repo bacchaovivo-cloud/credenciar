@@ -235,9 +235,9 @@ export default function Convidados() {
 
   const handleExportar = async () => {
     try {
-      const token = localStorage.getItem('userToken');
+      // 🔐 HARDENING: Removido token do localStorage. O backend usa cookies httpOnly.
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/convidados/exportar/${eventoAtivo}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include' // Garante envio dos cookies
       });
       if (!response.ok) throw new Error('Falha na exportação');
       const blob = await response.blob();
@@ -367,7 +367,7 @@ export default function Convidados() {
                   <i className="bi bi-filetype-csv text-lg"></i>
                 </button>
                 <button 
-                  onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/convidados/${eventoAtivo}/exportar-xlsx?token=${localStorage.getItem('userToken')}`, '_blank')}
+                  onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/convidados/${eventoAtivo}/exportar-xlsx`, '_blank')}
                   title="Relatório Excel (Pro)"
                   className="p-2.5 bg-[#0f1522] border border-[#2a374a] text-emerald-500 rounded-lg hover:bg-emerald-500/10 transition-all"
                 >

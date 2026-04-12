@@ -1,8 +1,42 @@
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
+import crypto from 'crypto';
 import db from '../config/db.js';
 import { Logger } from '../utils/logger.js';
 import { env } from '../config/env.js';
+import Redis from 'ioredis';
+
+// 🔐 ANTI-REPLAY BLACKLIST
+// Previne o reuso de tokens TOTP dentro da janela de validade (90s)
+const redis = env.REDIS_URL ? new Redis(env.REDIS_URL) : null;
+const localCache = new Map(); // Fallback para dev/local sem Redis
+
+const blacklistToken = async (userId, token) => {
+  const key = `totp_used:${userId}:${token}`;
+  if (redis) {
+    await redis.set(key, '1', 'EX', 90);
+  } else {
+    localCache.set(key, Date.now() + 90000);
+    // Limpeza periódica simples
+    if (localCache.size > 1000) {
+      const now = Date.now();
+      for (const [k, v] of localCache.entries()) {
+        if (v < now) localCache.delete(k);
+      }
+    }
+  }
+};
+
+const isTokenBlacklisted = async (userId, token) => {
+  const key = `totp_used:${userId}:${token}`;
+  if (redis) {
+    return !!(await redis.get(key));
+  }
+  const expiry = localCache.get(key);
+  if (expiry && expiry > Date.now()) return true;
+  if (expiry) localCache.delete(key);
+  return false;
+};
 
 /**
  * 🔐 AUTH SERVICE (Zenith Excellence)
@@ -18,8 +52,11 @@ export class AuthService {
 
     const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
     
-    // Gerar chaves de recuperação (Enterprise standard)
-    const recoveryCodes = Array.from({ length: 8 }, () => Math.random().toString(36).substr(2, 8).toUpperCase());
+    // 🔐 HARDENING: Gerar chaves de recuperação usando CSPRNG (Crypto Secure Pseudo-Random Number Generator)
+    // Anteriormente usava Math.random() que é previsível e inseguro para segredos.
+    const recoveryCodes = Array.from({ length: 10 }, () => 
+      crypto.randomBytes(6).toString('hex').toUpperCase()
+    );
 
     return {
       secret: secret.base32,
@@ -28,13 +65,26 @@ export class AuthService {
     };
   }
 
-  static verifyToken(secret, token) {
-    return speakeasy.totp.verify({
+  static async verifyToken(secret, token, userId) {
+    // 🛡️ ANTI-REPLAY: Verifica se o token já foi usado nesta janela
+    if (await isTokenBlacklisted(userId, token)) {
+        Logger.warn(`🚨 [SECURITY] Replay Attack Detectado: Token TOTP reutilizado para Usuário ${userId}`);
+        return false;
+    }
+
+    const isValid = speakeasy.totp.verify({
       secret,
       encoding: 'base32',
       token,
       window: 1 // Janela de tolerância de +/- 30 segundos (drift do relógio)
     });
+
+    if (isValid) {
+        // Blacklista o token para os próximos 90 segundos
+        await blacklistToken(userId, token);
+    }
+
+    return isValid;
   }
 
   static async enable2FA(usuarioId, secret, recoveryCodes) {
