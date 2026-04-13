@@ -30,14 +30,20 @@ const checkinPayloadSchema = z.object({
   evento_id: z.union([z.string(), z.number()]).transform(Number).refine(n => !isNaN(n) && n > 0, 'evento_id inválido'),
   station_id: z.string().optional(),
   photo: z.string().optional(),
-  printer_ip: z.string().optional().nullable(),
+  printer_ip: z.string().regex(/^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.|99\.99\.)/, "IP de impressora não permitido").optional().nullable(),
   // Fix: aceita string '9100' ou number 9100 — clientes enviam ambos
-  printer_port: z.union([z.string(), z.number()]).transform(Number).optional().default(9100),
+  printer_port: z.union([z.string(), z.number()]).transform(Number).refine(p => [9100, 9101, 515].includes(p), "Porta não permitida").optional().default(9100),
   data_ponto: z.string().optional().nullable(),
 });
 
 export const getConvidados = async (req, res) => {
   const { eventoId } = req.params;
+
+  if (req.user?.role !== 'ADMIN' && req.user?.role !== 'MANAGER') {
+    if (!req.user?.evento_atribuido || Number(req.user.evento_atribuido) !== Number(eventoId)) {
+      return res.status(403).json({ success: false, message: 'Acesso negado.' });
+    }
+  }
   const page = parseInt(req.query.page) || 1;
   const rawLimit = parseInt(req.query.limit) || 50;
   // Fix: Impede exaustão de DB limitando a 500 itens por request
@@ -98,6 +104,12 @@ export const getConvidados = async (req, res) => {
 
 export const createConvidado = async (req, res) => {
   const { eventoId } = req.params;
+
+  if (req.user?.role !== 'ADMIN' && req.user?.role !== 'MANAGER') {
+    if (!req.user?.evento_atribuido || Number(req.user.evento_atribuido) !== Number(eventoId)) {
+      return res.status(403).json({ success: false, message: 'Acesso negado.' });
+    }
+  }
   const { convTable } = getEventTablesList(eventoId);
   validateTableName(convTable);
   const data = convidadoSchema.parse(req.body);
@@ -114,6 +126,12 @@ export const createConvidado = async (req, res) => {
 
 export const createConvidadosMassa = async (req, res) => {
   const { eventoId } = req.params;
+
+  if (req.user?.role !== 'ADMIN' && req.user?.role !== 'MANAGER') {
+    if (!req.user?.evento_atribuido || Number(req.user.evento_atribuido) !== Number(eventoId)) {
+      return res.status(403).json({ success: false, message: 'Acesso negado.' });
+    }
+  }
   const { convTable } = getEventTablesList(eventoId);
   validateTableName(convTable);
   const data = convidadoMassaSchema.parse(req.body);
@@ -142,9 +160,9 @@ export const updateConvidado = async (req, res) => {
 
   // 🔒 FIX ALTO-03: IDOR — verifica se o usuário tem acesso a este evento
   if (req.user?.role !== 'ADMIN' && req.user?.role !== 'MANAGER') {
-    if (req.user?.evento_atribuido && Number(req.user.evento_atribuido) !== Number(eventoId)) {
+    if (!req.user?.evento_atribuido || Number(req.user.evento_atribuido) !== Number(eventoId)) {
       Logger.warn(`[IDOR-ATTEMPT] User ${req.user.id} (role: ${req.user.role}) tentou editar convidado do evento ${eventoId}`, { ip: req.ip });
-      return res.status(403).json({ success: false, message: 'Acesso Negado: Sem permissão para este evento.' });
+      return res.status(403).json({ success: false, message: 'Acesso negado.' });
     }
   }
 
@@ -511,6 +529,12 @@ export const exportarXLSX = async (req, res) => {
 
 export const getSorteio = async (req, res) => {
   const { eventoId } = req.params;
+
+  if (req.user?.role !== 'ADMIN' && req.user?.role !== 'MANAGER') {
+    if (!req.user?.evento_atribuido || Number(req.user.evento_atribuido) !== Number(eventoId)) {
+      return res.status(403).json({ success: false, message: 'Acesso negado.' });
+    }
+  }
   const { convTable } = getEventTablesList(eventoId);
   const [rows] = await db.query(
     `SELECT id, nome, categoria FROM ${convTable} WHERE status_checkin = 1`,
@@ -534,6 +558,10 @@ export const importarEmMassa = async (req, res) => {
 
     if (!Array.isArray(convidados) || convidados.length === 0) {
         return res.status(400).json({ success: false, message: 'Nenhum convidado enviado.' });
+    }
+
+    if (convidados.length > 5000) {
+        return res.status(400).json({ success: false, message: 'Máximo de 5000 convidados por lote excedido.' });
     }
 
     try {

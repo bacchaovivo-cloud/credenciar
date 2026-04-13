@@ -1,6 +1,6 @@
 import express from 'express';
 import { registrarECredenciar, statusFila, reimprimirCheckin, testarImpressora } from '../controllers/impressaoController.js';
-import { verifyToken } from '../middlewares/authMiddleware.js';
+import { verifyToken, checkRole } from '../middlewares/authMiddleware.js';
 import { apiKeyOrToken } from '../middlewares/apiKeyMiddleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
@@ -16,6 +16,6 @@ console.log('✅ Impressao Routes Carregadas');
 router.post('/credenciar', apiKeyOrToken(verifyToken), asyncHandler(registrarECredenciar));
 router.get('/status-fila/:eventoId', verifyToken, asyncHandler(statusFila));
 router.post('/reimprimir/:convidadoId', verifyToken, asyncHandler(reimprimirCheckin));
-router.post('/test-printer', verifyToken, asyncHandler(testarImpressora));
+router.post('/test-printer', verifyToken, checkRole(['ADMIN', 'MANAGER']), asyncHandler(testarImpressora));
 
 export default router;

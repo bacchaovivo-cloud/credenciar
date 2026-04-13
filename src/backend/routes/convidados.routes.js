@@ -5,7 +5,7 @@ import {
   deleteConvidado, check, checkinFace, updateFaceDescriptor, checkinMassa, 
   desfazerCheckin, exportarCSV, importarEmMassa, exportarXLSX, getSorteio, resetCheckins 
 } from '../controllers/convidadosController.js';
-import { verifyToken, adminOnly } from '../middlewares/authMiddleware.js';
+import { verifyToken, adminOnly, checkRole } from '../middlewares/authMiddleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { checkinLimiter } from '../middlewares/rateLimiter.js';
 import { apiKeyOrToken } from '../middlewares/apiKeyMiddleware.js';
@@ -14,7 +14,7 @@ const router = Router();
 
 // 🩺 ZENITH HEARTBEAT
 // 🔒 CORREÇÃO: Middleware apiKeyOrToken(verifyToken) aplicado para evitar falsificação de status
-router.post('/station/ping', apiKeyOrToken(verifyToken), (req, res) => {
+router.post('/station/ping', apiKeyOrToken(verifyToken), checkRole(['ADMIN', 'TOTEM']), (req, res) => {
     const { stationId, type, status } = req.body;
     StationService.reportStatus(stationId, type || 'TOTEM', status || 'ACTIVE');
     res.sendStatus(200);

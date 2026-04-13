@@ -3,13 +3,15 @@
  * Garante que todos os logs do servidor Bacch sejam rastreáveis e em JSON.
  */
 
+import { env } from '../config/env.js';
+
 const format = (level, message, meta = {}) => {
     return JSON.stringify({
         timestamp: new Date().toISOString(),
         level,
         message,
         ...meta,
-        env: process.env.NODE_ENV || 'development'
+        env: env.NODE_ENV || 'development'
     });
 };
 
@@ -23,7 +25,7 @@ export const Logger = {
     error(msg, error, meta) {
         console.error(format('ERROR', msg, { 
             error: error?.message || error, 
-            stack: error?.stack,
+            stack: env.NODE_ENV === 'production' ? undefined : error?.stack,
             ...meta 
         }));
     },

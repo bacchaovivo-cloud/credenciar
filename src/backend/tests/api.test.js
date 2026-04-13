@@ -8,7 +8,7 @@ app.use(express.json());
 
 app.post('/api/auth/login', (req, res) => {
   const { usuario, senha } = req.body;
-  if (usuario === 'admin' && senha === 'senha123') {
+  if (usuario === process.env.TEST_USER && senha === process.env.TEST_PASS) {
     return res.json({ success: true, token: 'fake-jwt-token' });
   }
   res.status(401).json({ success: false, message: 'Credenciais inválidas' });
@@ -25,7 +25,7 @@ describe('Sistema Bacch CRM - Testes de API', () => {
   test('POST /api/auth/login - Sucesso', async () => {
     const res = await request(app)
       .post('/api/auth/login')
-      .send({ usuario: 'admin', senha: 'senha123' });
+      .send({ usuario: process.env.TEST_USER, senha: process.env.TEST_PASS });
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.token).toBeDefined();

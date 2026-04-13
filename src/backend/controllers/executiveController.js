@@ -63,14 +63,14 @@ export const getGlobalStats = async (req, res) => {
             const [photos] = await db.query(`
                 SELECT 
                     c.nome, 
-                    l.checkin_photo, 
+                    l.id as checkin_id, 
                     l.criado_em,
-                    '${ev.nome}' as evento_nome
+                    ? as evento_nome
                 FROM ${tables.logsTable} l
                 JOIN ${tables.convTable} c ON c.id = l.convidado_id
                 WHERE l.checkin_photo IS NOT NULL
                 ORDER BY l.criado_em DESC LIMIT 4
-            `);
+            `, [ev.nome]);
             recentPhotos.push(...photos);
         } catch (e) {}
     }

@@ -1,9 +1,11 @@
+import { env } from '../config/env.js';
+
 /**
  * Middleware para simular condições adversas de rede e servidor (Modo Caos)
  * Simula Distribuição de Latência Realista (P95/P99)
  */
 export const chaosMiddleware = (req, res, next) => {
-  if (process.env.CHAOS_MODE !== 'true') return next();
+  if (!env.CHAOS_MODE) return next();
 
   // 1. Distribuição de Latência (P95/P99 Simulator)
   // 90% das requisições: 50ms - 300ms (Normal)

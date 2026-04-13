@@ -47,7 +47,7 @@ export const convidadoMassaSchema = z.object({
         email: z.string().optional()
       })
     ])
-  )
+  ).max(5000, "Máximo de 5000 convidados por lote")
 });
 
 export const checkinMassaSchema = z.object({
@@ -58,12 +58,13 @@ export const checkinMassaSchema = z.object({
       data_entrada: z.string().optional().nullable(),
       data_ponto: z.string().optional().nullable()
     })
-  )
+  ).max(2000, "Máximo de 2000 check-ins por lote")
 });
 
 // 🔒 FIX ALTO-02: Política de senha robusta
 const senhaSchema = z.string()
   .min(10, "Senha deve ter ao menos 10 caracteres")
+  .max(128, "Senha não pode exceder 128 caracteres")
   .regex(/[A-Z]/, "Deve conter ao menos uma letra maiúscula")
   .regex(/[0-9]/, "Deve conter ao menos um número")
   .regex(/[^A-Za-z0-9]/, "Deve conter ao menos um caractere especial (!@#$%^&*)");

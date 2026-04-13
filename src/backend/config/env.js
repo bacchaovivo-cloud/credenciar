@@ -29,6 +29,7 @@ const envSchema = z.object({
   REDIS_URL: z.string().optional().default(''),
   // CHAOS_MODE: apenas para desenvolvimento
   CHAOS_MODE: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
+  PRINTER_MODE: z.enum(['fake', 'real']).default('real'),
 });
 
 const _env = envSchema.safeParse(process.env);

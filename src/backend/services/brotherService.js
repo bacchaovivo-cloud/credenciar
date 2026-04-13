@@ -3,6 +3,7 @@ import db from '../config/db.js';
 import { Jimp } from 'jimp';
 import { CircuitBreaker } from '../utils/circuitBreaker.js';
 import { AlertService } from './alertService.js';
+import { env } from '../config/env.js';
 
 /**
  * Brother QL-820NWB ESC/P & P-touch Template Service
@@ -10,6 +11,15 @@ import { AlertService } from './alertService.js';
  */
 export const BrotherService = {
   
+  validateTarget(ip, port) {
+    if (env.PRINTER_MODE === 'fake' && (ip || '').startsWith('99.99')) return;
+    const SAFE_PRINTER = /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/;
+    const p = parseInt(port, 10) || 9100;
+    if (!SAFE_PRINTER.test(ip) || ![9100, 9101, 515].includes(p)) {
+      throw new Error('IP/porta de impressora não permitido');
+    }
+  },
+
   // Mapa para controlar workers ativos por IP
   workersByIp: new Map(),
   // Circuit Breakers por IP de impressora — previne loop de falhas em cascata
@@ -61,6 +71,7 @@ export const BrotherService = {
    * Adiciona um trabalho à fila
    */
   async enqueue(participante, eventoId, printerIp, printerPort) {
+    this.validateTarget(printerIp, printerPort);
     await db.query(
       'INSERT INTO print_jobs (convidado_id, evento_id, printer_ip, printer_port, status) VALUES (?, ?, ?, ?, ?)',
       [participante.id, eventoId, printerIp, printerPort, 'PENDENTE']
@@ -254,7 +265,7 @@ export const BrotherService = {
 
   async sendToTcp(data, host, port = 9100) {
     // MODO SIMULADO (Apenas para testes locais sem impressora)
-    if (process.env.PRINTER_MODE === 'fake' || host.startsWith('99.99')) {
+    if (env.PRINTER_MODE === 'fake' || host.startsWith('99.99')) {
       return new Promise((resolve, reject) => {
         // Simulação de Impressora "Travada" (Stuck)
         if (host === '99.99.99.99') {
@@ -333,6 +344,7 @@ export const BrotherService = {
   },
 
   async testPrinter(ip, port) {
+     this.validateTarget(ip, port);
      return this.sendToTcp(Buffer.from([0x1B, 0x40]), ip, port); 
   },
 
@@ -341,7 +353,7 @@ export const BrotherService = {
    * Retorna o status físico da impressora (Erro de Papel, Tampa, etc.)
    */
   async getPrinterStatus(host, port = 9100) {
-    if (process.env.PRINTER_MODE === 'fake') {
+    if (env.PRINTER_MODE === 'fake') {
         // Simulação aleatória de erros para teste do War Room
         const rand = Math.random();
         if (rand > 0.95) return { status: 'PAPER_OUT' };

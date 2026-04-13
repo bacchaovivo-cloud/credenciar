@@ -18,10 +18,11 @@ export const WhatsAppService = {
             const config = rows[0];
 
             // 2. Prepara a mensagem (Template Parsing)
+            const sanitize = (val) => String(val || '').replace(/[{}]/g, '');
             let msg = config.whatsapp_template
-                .replace('{{nome}}', participante.nome)
-                .replace('{{evento}}', config.evento_nome)
-                .replace('{{categoria}}', participante.categoria || 'Geral');
+                .replace('{{nome}}', sanitize(participante.nome))
+                .replace('{{evento}}', sanitize(config.evento_nome))
+                .replace('{{categoria}}', sanitize(participante.categoria || 'Geral'));
 
             const tel = participante.telefone?.replace(/\D/g, '');
             if (!tel || tel.length < 10) {

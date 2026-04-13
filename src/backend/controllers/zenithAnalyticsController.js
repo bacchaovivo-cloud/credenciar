@@ -72,9 +72,14 @@ export const getStatsEvento = async (req, res) => {
 
 export const getLogsForenses = async (req, res) => {
   try {
-    const [rows] = await db.query(
-      'SELECT l.*, u.nome as operador_nome FROM audit_logs l LEFT JOIN usuarios u ON u.id = l.usuario_id ORDER BY l.criado_em DESC LIMIT 200'
-    );
+    let q = 'SELECT l.*, u.nome as operador_nome FROM audit_logs l LEFT JOIN usuarios u ON u.id = l.usuario_id';
+    let p = [];
+    if (req.user?.role === 'MANAGER' && req.user?.evento_atribuido) {
+       q += ' WHERE (l.detalhes LIKE ? OR l.usuario_id IN (SELECT id FROM usuarios WHERE evento_atribuido = ?))';
+       p.push(`%${req.user.evento_atribuido}%`, req.user.evento_atribuido);
+    }
+    q += ' ORDER BY l.criado_em DESC LIMIT 200';
+    const [rows] = await db.query(q, p);
     res.json({ success: true, dados: rows });
   } catch (error) {
     Logger.error('Erro ao buscar logs forenses:', error);

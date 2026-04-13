@@ -74,8 +74,11 @@ export const CheckinService = {
             WhatsAppService.enviarBoasVindas(p, evento_id).catch(e => Logger.error('FALHA_WHATSAPP:', e));
 
             // 5. Impressão (Fila Assíncrona)
-            if (printer_ip) {
-                await BrotherService.enqueue(p, evento_id, printer_ip, printer_port);
+            const [ev] = await db.query('SELECT printer_ip, printer_port FROM eventos WHERE id=?', [evento_id]);
+            const safePrinterIp = ev[0]?.printer_ip || null;
+            const safePrinterPort = ev[0]?.printer_port || 9100;
+            if (safePrinterIp) {
+                await BrotherService.enqueue(p, evento_id, safePrinterIp, safePrinterPort);
             }
 
             const isVIP = ['VIP', 'COORD', 'PRODU', 'DIRETORIA'].some(term => p.categoria?.toUpperCase().includes(term));
